@@ -1,0 +1,17 @@
+# Generated per-config by sweep.py — do not edit by hand.
+config setup
+    charondebug="ike 1, knl 1, cfg 0"
+
+conn lab
+    keyexchange={{IKE}}
+    type={{MODE}}
+    left=10.10.0.10
+    right=10.10.0.20
+    leftid=10.10.0.10
+    rightid=10.10.0.20
+    authby=secret
+    ike={{IKE_PROPOSAL}}
+    esp={{ESP_PROPOSAL}}
+    auto={{AUTO}}
+    keyingtries=1
+    dpdaction=none
