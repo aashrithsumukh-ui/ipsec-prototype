@@ -1,0 +1,26 @@
+# Two strongSwan gateways on one bridge network. NET_ADMIN + XFRM access needed
+# for the host kernel to install IPsec SAs. privileged keeps setup friction low
+# for a lab; tighten to specific caps for anything beyond the testbed.
+services:
+  moon:                       # initiator, 10.10.0.10
+    build: .
+    container_name: ipg_moon
+    privileged: true
+    cap_add: ["NET_ADMIN", "SYS_MODULE"]
+    networks: { vpnlab: { ipv4_address: 10.10.0.10 } }
+    volumes: ["./captures:/captures"]
+  sun:                        # responder, 10.10.0.20
+    build: .
+    container_name: ipg_sun
+    privileged: true
+    cap_add: ["NET_ADMIN", "SYS_MODULE"]
+    networks: { vpnlab: { ipv4_address: 10.10.0.20 } }
+    volumes: ["./captures:/captures"]
+networks:
+  vpnlab:
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: 10.10.0.0/24
+        - subnet: fd00:dead:beef::/64

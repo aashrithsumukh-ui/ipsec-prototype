@@ -7,3 +7,4 @@ sweep_old.py
 sweep_new.py
 *.tmp
 ipg-venv/
+.gitignore.orig
