@@ -8,3 +8,7 @@ sweep_new.py
 *.tmp
 ipg-venv/
 .gitignore.orig
+*.pcap
+testbed/*.pcap
+sweep.log
+testbed/sweep.log

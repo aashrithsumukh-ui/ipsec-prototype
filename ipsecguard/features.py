@@ -56,4 +56,9 @@ def extract_flow_features(pcap_path):
         "small_pkt_frac": float((sizes < 300).mean()),
         "large_pkt_frac": float((sizes > 1000).mean()),
         "flow_dur_s":    dur,
+        "pkt_count":     float(len(esp)),
+        "iat_cv":        float(iats.std() / (iats.mean() + 1e-6)),
+        "size_cv":       float(sizes.std() / (sizes.mean() + 1e-6)),
+        "iat_p10":       float(np.percentile(iats, 10)) if len(iats) > 1 else 0.0,
+        "iat_p90":       float(np.percentile(iats, 90)) if len(iats) > 1 else 0.0,
     }

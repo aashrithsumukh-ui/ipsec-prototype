@@ -21,4 +21,5 @@ FLOW_FEATURES = [
     "pkt_size_mean", "pkt_size_std", "pkt_size_p10", "pkt_size_p50", "pkt_size_p90",
     "iat_mean", "iat_std", "burstiness",
     "pps", "bytes_ratio_updown", "small_pkt_frac", "large_pkt_frac", "flow_dur_s",
+    "pkt_count", "iat_cv", "size_cv", "iat_p10", "iat_p90",
 ]
