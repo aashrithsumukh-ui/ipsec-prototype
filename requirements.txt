@@ -1,0 +1,10 @@
+xgboost>=2.0
+scikit-learn>=1.3
+pandas>=2.0
+numpy>=1.24
+scapy>=2.5
+shap>=0.44
+# pyshark optional; tshark (system pkg) preferred for IKE parsing
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9

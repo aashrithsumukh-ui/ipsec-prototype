@@ -1,0 +1,396 @@
+import json
+data = json.load(open("outputs/analysis.json"))
+DATA_JSON = json.dumps(data)
+
+HTML = r'''<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IPsecGuard AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0E141F; --bg2:#0A0F17; --surf:#161F2E; --surf2:#1C2838;
+  --line:#26344A; --line2:#324563;
+  --ink:#EAF0F9; --mut:#8C9BB3; --dim:#5F6E86;
+  --observed:#2DD4BF; --observed-d:#0E4F49;
+  --inferred:#F5A623; --inferred-d:#5A3F0E;
+  --good:#34D399; --warn:#F5A623; --bad:#F87171;
+  --box-top:env(safe-area-inset-top,0px); --box-bot:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:var(--box-top)}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:Inter,system-ui,sans-serif; font-size:14px; line-height:1.5;
+  padding:var(--box-top) 0 var(--box-bot);
+  background-image:radial-gradient(1200px 500px at 80% -10%, #16233a55, transparent);
+}
+.wrap{max-width:1080px; margin:0 auto; padding:20px 20px 64px}
+h1,h2,h3{font-family:'Space Grotesk',sans-serif; margin:0; font-weight:600; letter-spacing:-.01em}
+.mono{font-family:'JetBrains Mono',monospace}
+
+/* header */
+.top{display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:24px}
+.brand{display:flex; align-items:center; gap:11px}
+.logo{width:30px;height:30px;flex:none}
+.brand .name{font-family:'Space Grotesk';font-weight:700;font-size:18px;letter-spacing:-.02em}
+.brand .sub{color:var(--dim);font-size:12px;margin-top:-2px}
+.switch{display:flex; background:var(--bg2); border:1px solid var(--line); border-radius:10px; padding:3px}
+.switch button{font-family:inherit;font-size:13px;font-weight:500;color:var(--mut);background:none;border:0;padding:7px 15px;border-radius:7px;cursor:pointer;transition:.18s}
+.switch button.on{background:var(--surf2);color:var(--ink);box-shadow:0 1px 0 #ffffff0d inset}
+
+/* hero */
+.hero{display:grid; grid-template-columns:280px 1fr; gap:18px; margin-bottom:18px}
+@media(max-width:720px){.hero{grid-template-columns:1fr}}
+.panel{background:linear-gradient(180deg,var(--surf),var(--surf2)); border:1px solid var(--line); border-radius:16px}
+.gauge-panel{padding:22px; display:flex; flex-direction:column; align-items:center; justify-content:center}
+.gauge{position:relative; width:210px; height:210px}
+.gauge svg{transform:rotate(135deg)}
+.gauge .val{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center}
+.gauge .num{font-family:'Space Grotesk';font-weight:700;font-size:58px;line-height:1}
+.gauge .den{color:var(--dim);font-size:13px;margin-top:2px}
+.band{margin-top:14px;font-family:'Space Grotesk';font-weight:600;font-size:15px;padding:5px 14px;border-radius:999px}
+.sessname{margin-top:12px;color:var(--mut);font-size:12px;text-align:center;max-width:230px;word-break:break-all}
+
+/* certainty ledger */
+.ledger{padding:22px}
+.ledger h3{font-size:13px;color:var(--mut);font-weight:500;margin-bottom:16px}
+.led-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+.led{border:1px solid var(--line);border-radius:13px;padding:15px 16px;position:relative;overflow:hidden}
+.led.obs{background:linear-gradient(180deg,#0f2b28,#0c1f22)}
+.led.inf{background:linear-gradient(180deg,#2c2410,#211a0e)}
+.led .k{font-size:12px;font-weight:600;display:flex;align-items:center;gap:7px}
+.led.obs .k{color:var(--observed)} .led.inf .k{color:var(--inferred)}
+.led .big{font-family:'Space Grotesk';font-weight:700;font-size:32px;margin-top:8px}
+.led .note{font-size:11.5px;color:var(--mut);margin-top:2px}
+.dot{width:8px;height:8px;border-radius:50%}
+.subs{display:grid;grid-template-columns:1fr 1fr;gap:12px 22px}
+@media(max-width:720px){.subs{grid-template-columns:1fr}}
+.sub .lab{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px}
+.sub .lab span:last-child{font-family:'JetBrains Mono';color:var(--mut)}
+.meter{height:7px;background:#0c1420;border-radius:99px;overflow:hidden}
+.meter i{display:block;height:100%;border-radius:99px;width:0;transition:width .9s cubic-bezier(.2,.8,.2,1)}
+
+/* section */
+.sec{margin-top:26px}
+.sec-h{display:flex;align-items:baseline;gap:10px;margin-bottom:13px}
+.sec-h h2{font-size:16px}
+.sec-h .hint{color:var(--dim);font-size:12px}
+
+/* facts */
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:720px){.facts{grid-template-columns:1fr}}
+.factcard{border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.factcard .head{padding:12px 16px;display:flex;align-items:center;gap:9px;font-family:'Space Grotesk';font-weight:600;font-size:13.5px;border-bottom:1px solid var(--line)}
+.factcard.obs .head{background:#0f2b2833;color:var(--observed)}
+.factcard.inf .head{background:#2c241033;color:var(--inferred)}
+.factcard .head .tag{margin-left:auto;font-family:'Inter';font-weight:500;font-size:11px;color:var(--mut)}
+.fact{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid #1b2637}
+.fact:last-child{border-bottom:0}
+.fact .fk{color:var(--mut);font-size:12.5px}
+.fact .fv{font-family:'JetBrains Mono';font-size:13px}
+.chip{font-family:'Inter';font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;margin-left:9px}
+.chip.c{background:var(--observed-d);color:var(--observed)}
+.chip.p{background:var(--inferred-d);color:var(--inferred)}
+
+/* threat matrix */
+.matrix{display:grid;grid-template-columns:auto repeat(3,1fr);gap:6px}
+.mx-corner{}
+.mx-h{font-size:11px;color:var(--mut);text-align:center;padding:6px;font-weight:600}
+.mx-yl{font-size:11px;color:var(--mut);display:flex;align-items:center;padding-right:8px;writing-mode:horizontal-tb;justify-content:flex-end;font-weight:600}
+.cell{min-height:64px;border:1px solid var(--line);border-radius:10px;padding:7px;display:flex;flex-direction:column;gap:4px}
+.cell.l0{background:#101a1233} .cell.l1{background:#3a2f0e2e} .cell.l2{background:#3a15152e;border-color:#5a2a2a}
+.pill{font-size:10.5px;font-weight:600;padding:3px 6px;border-radius:6px;background:#0d1520;border:1px solid var(--line2);color:var(--ink);line-height:1.2}
+.pill.high{border-color:#7a3030;color:#ffb4b4} .pill.medium{border-color:#7a5f20;color:#ffd98f} .pill.low{border-color:#2a5a52;color:#9df0e4}
+
+/* findings */
+.find{display:flex;gap:0;border:1px solid var(--line);border-radius:12px;margin-bottom:9px;overflow:hidden;background:var(--surf)}
+.find .rail{width:5px;flex:none}
+.find .body{padding:13px 15px;flex:1}
+.find .r1{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.find .ft{font-family:'Space Grotesk';font-weight:600;font-size:14px}
+.sev{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:5px;text-transform:uppercase;letter-spacing:.03em}
+.sev.high{background:#3a1515;color:#ff9d9d} .sev.medium{background:#3a2f10;color:#ffcf7a}
+.sev.low{background:#14312c;color:#8fe6d8} .sev.info{background:#1a2436;color:#9fb2cd}
+.deriv{font-size:11px;font-weight:600;padding:2px 8px;border-radius:5px;margin-left:auto}
+.deriv.observed{background:var(--observed-d);color:var(--observed)}
+.deriv.inferred{background:var(--inferred-d);color:var(--inferred)}
+.find .detail{color:var(--mut);font-size:12.5px;margin-top:6px}
+.find .meta{display:flex;gap:16px;flex-wrap:wrap;margin-top:9px;font-size:11.5px}
+.find .meta .m{color:var(--dim)} .find .meta .m b{color:var(--mut);font-weight:600}
+.find .rec{color:var(--observed);font-size:12.5px;margin-top:7px}
+.empty{border:1px dashed var(--line2);border-radius:12px;padding:26px;text-align:center;color:var(--mut)}
+.empty .big{font-family:'Space Grotesk';font-size:16px;color:var(--good);margin-bottom:4px}
+
+/* model + reports */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:720px){.grid2{grid-template-columns:1fr}}
+.mpanel{border:1px solid var(--line);border-radius:14px;padding:16px}
+.mstat{display:flex;gap:22px;margin-bottom:16px}
+.mstat .s .n{font-family:'Space Grotesk';font-weight:700;font-size:26px}
+.mstat .s .l{color:var(--mut);font-size:11.5px}
+.fi{margin-bottom:8px}
+.fi .l{display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:3px}
+.fi .l span:first-child{font-family:'JetBrains Mono';color:var(--mut)}
+.fi .bar{height:6px;background:#0c1420;border-radius:99px;overflow:hidden}
+.fi .bar i{display:block;height:100%;background:linear-gradient(90deg,#2dd4bf,#3a86ff);border-radius:99px}
+.split-note{font-size:11.5px;color:var(--dim);margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.tabs{display:flex;gap:4px;margin-bottom:12px}
+.tabs button{font-family:inherit;font-size:12.5px;font-weight:500;color:var(--mut);background:var(--bg2);border:1px solid var(--line);padding:7px 13px;border-radius:8px;cursor:pointer}
+.tabs button.on{color:var(--ink);background:var(--surf2);border-color:var(--line2)}
+.report{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:16px 18px;font-size:13px;max-height:340px;overflow:auto}
+.report h1{font-size:16px;margin:0 0 8px} .report h2{font-size:13.5px;color:var(--mut);margin:14px 0 6px}
+.report h3{font-size:13px;margin:12px 0 4px} .report code{font-family:'JetBrains Mono';font-size:12px;background:#16202f;padding:1px 5px;border-radius:4px;color:#9df0e4}
+.report ul{margin:6px 0;padding-left:18px} .report li{margin:3px 0}
+.report p{margin:6px 0;color:var(--mut)} .report strong{color:var(--ink)}
+.foot{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:var(--dim);font-size:11.5px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 32 32" fill="none">
+        <path d="M16 2 4 7v8c0 7 5 12 12 15 7-3 12-8 12-15V7L16 2Z" stroke="#2DD4BF" stroke-width="1.6" fill="#0f2b2833"/>
+        <path d="M11 15v-3a5 5 0 0 1 10 0v3" stroke="#F5A623" stroke-width="1.6"/>
+        <rect x="10" y="15" width="12" height="9" rx="2" stroke="#EAF0F9" stroke-width="1.6"/>
+      </svg>
+      <div>
+        <div class="name">IPsecGuard AI</div>
+        <div class="sub">IPsec VPN security assessment</div>
+      </div>
+    </div>
+    <div class="switch" id="switch"></div>
+  </div>
+
+  <div class="hero">
+    <div class="panel gauge-panel">
+      <div class="gauge">
+        <svg width="210" height="210" viewBox="0 0 210 210">
+          <circle cx="105" cy="105" r="88" fill="none" stroke="#0c1420" stroke-width="16"
+                  stroke-dasharray="414.7 552.9" stroke-linecap="round"/>
+          <circle id="arc" cx="105" cy="105" r="88" fill="none" stroke="#34D399" stroke-width="16"
+                  stroke-dasharray="0 552.9" stroke-linecap="round" style="transition:stroke-dasharray 1s cubic-bezier(.2,.8,.2,1), stroke .6s"/>
+        </svg>
+        <div class="val"><div class="num" id="score">0</div><div class="den">/ 100 risk score</div></div>
+      </div>
+      <div class="band" id="band"></div>
+      <div class="sessname mono" id="sessname"></div>
+    </div>
+
+    <div class="panel ledger">
+      <h3>Certainty ledger — every finding tagged by how it was derived</h3>
+      <div class="led-row">
+        <div class="led obs">
+          <div class="k"><span class="dot" style="background:var(--observed)"></span>OBSERVED</div>
+          <div class="big" id="obs-n">0</div>
+          <div class="note">read from plaintext IKE_SA_INIT — certain</div>
+        </div>
+        <div class="led inf">
+          <div class="k"><span class="dot" style="background:var(--inferred)"></span>INFERRED</div>
+          <div class="big" id="inf-n">0</div>
+          <div class="note">from encrypted-traffic metadata — with confidence</div>
+        </div>
+      </div>
+      <div class="subs" id="subs"></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Session characteristics</h2><span class="hint">left = certain · right = estimated</span></div>
+    <div class="facts">
+      <div class="factcard obs">
+        <div class="head"><span class="dot" style="background:var(--observed)"></span>Observed<span class="tag">read from handshake</span></div>
+        <div id="obs-facts"></div>
+      </div>
+      <div class="factcard inf">
+        <div class="head"><span class="dot" style="background:var(--inferred)"></span>Inferred<span class="tag">ML from ESP metadata</span></div>
+        <div id="inf-facts"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Threat matrix</h2><span class="hint">likelihood × impact</span></div>
+    <div class="matrix" id="matrix"></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Findings</h2><span class="hint" id="find-count"></span></div>
+    <div id="findings"></div>
+  </div>
+
+  <div class="sec grid2">
+    <div>
+      <div class="sec-h"><h2>Classifier</h2><span class="hint">traffic-type model</span></div>
+      <div class="mpanel">
+        <div class="mstat">
+          <div class="s"><div class="n" id="acc">—</div><div class="l">accuracy</div></div>
+          <div class="s"><div class="n" id="f1">—</div><div class="l">F1 macro</div></div>
+          <div class="s"><div class="n" id="ntest">—</div><div class="l">test sessions</div></div>
+        </div>
+        <div id="fimp"></div>
+        <div class="split-note" id="splitnote"></div>
+      </div>
+    </div>
+    <div>
+      <div class="sec-h"><h2>Reports</h2><span class="hint">auto-generated</span></div>
+      <div class="tabs">
+        <button data-r="exec" class="on">Executive</button>
+        <button data-r="tech">Technical</button>
+      </div>
+      <div class="report" id="report"></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>IPsecGuard AI · prototype · never decrypts payloads</span>
+    <span id="foot-split"></span>
+  </div>
+</div>
+
+<script>
+const DATA = __DATA__;
+let cur = "weak";
+
+function mdToHtml(md){
+  const esc = s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const lines = md.split('\n'); let html=''; let inUl=false;
+  const inline = t => esc(t)
+      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+      .replace(/`(.+?)`/g,'<code>$1</code>');
+  for(let l of lines){
+    if(/^### /.test(l)){ if(inUl){html+='</ul>';inUl=false} html+='<h3>'+inline(l.slice(4))+'</h3>'; }
+    else if(/^## /.test(l)){ if(inUl){html+='</ul>';inUl=false} html+='<h2>'+inline(l.slice(3))+'</h2>'; }
+    else if(/^# /.test(l)){ if(inUl){html+='</ul>';inUl=false} html+='<h1>'+inline(l.slice(2))+'</h1>'; }
+    else if(/^- /.test(l)){ if(!inUl){html+='<ul>';inUl=true} html+='<li>'+inline(l.slice(2))+'</li>'; }
+    else if(l.trim()===''){ if(inUl){html+='</ul>';inUl=false} }
+    else { if(inUl){html+='</ul>';inUl=false} html+='<p>'+inline(l)+'</p>'; }
+  }
+  if(inUl)html+='</ul>'; return html;
+}
+
+const C = 552.9;
+function bandFor(s){
+  if(s<40) return ["Critical","#F87171"];
+  if(s<70) return ["At risk","#F5A623"];
+  if(s<88) return ["Acceptable","#34D399"];
+  return ["Strong","#34D399"];
+}
+const SEVW={critical:4,high:3,medium:2,low:1,info:0};
+let curReport="exec";
+
+function render(){
+  const s = DATA.sessions[cur];
+  // gauge
+  const [bname,bcol]=bandFor(s.risk_score);
+  const arc=document.getElementById('arc');
+  arc.setAttribute('stroke',bcol);
+  arc.setAttribute('stroke-dasharray',(414.7*s.risk_score/100).toFixed(1)+' '+C);
+  const badge=document.getElementById('band');
+  badge.textContent=bname; badge.style.background=bcol+'22'; badge.style.color=bcol;
+  document.getElementById('sessname').textContent=s.session;
+  // animate number
+  const nel=document.getElementById('score'); let n=0;
+  clearInterval(nel._t); nel._t=setInterval(()=>{n+=Math.ceil(s.risk_score/24||1); if(n>=s.risk_score){n=s.risk_score;clearInterval(nel._t)} nel.textContent=n;},18);
+  // ledger counts
+  const obs=s.findings.filter(f=>f.derivation==='observed').length;
+  const inf=s.findings.filter(f=>f.derivation==='inferred').length;
+  document.getElementById('obs-n').textContent=obs;
+  document.getElementById('inf-n').textContent=inf;
+  document.getElementById('foot-split').textContent=obs+' observed · '+inf+' inferred findings';
+  // subscores
+  const names={crypto_strength:'Crypto strength',key_management:'Key management',forward_secrecy:'Forward secrecy',metadata_exposure:'Metadata exposure'};
+  document.getElementById('subs').innerHTML=Object.entries(s.subscores).map(([k,v])=>{
+    const col=v<40?'#F87171':v<70?'#F5A623':'#34D399';
+    return `<div class="sub"><div class="lab"><span>${names[k]}</span><span>${v}</span></div>
+      <div class="meter"><i style="background:${col}" data-w="${v}"></i></div></div>`;}).join('');
+  // facts
+  const of=s.observed, inf2=s.inferred;
+  const obsRows=[['IKE version', of.ike_version?('IKEv'+of.ike_version):'—'],
+    ['Encryption', of.enc_algo||'—'],['Integrity', of.integrity||'—'],['DH group', of.dh_group?('group '+of.dh_group):'—']];
+  document.getElementById('obs-facts').innerHTML=obsRows.map(([k,v])=>
+    `<div class="fact"><span class="fk">${k}</span><span class="fv">${v}<span class="chip c">certain</span></span></div>`).join('');
+  const pct=x=>x==null?'':Math.round(x*100)+'%';
+  const infRows=[['Traffic type', inf2.traffic_type, inf2.traffic_conf],
+    ['PFS', inf2.pfs, inf2.pfs_conf],['Mode', inf2.mode, inf2.mode_conf],
+    ['Anomaly', inf2.anomaly?'flagged':'none', inf2.anomaly_conf]];
+  document.getElementById('inf-facts').innerHTML=infRows.map(([k,v,c])=>
+    `<div class="fact"><span class="fk">${k}</span><span class="fv">${v??'—'}${c?`<span class="chip p">${pct(c)}</span>`:''}</span></div>`).join('');
+  // matrix
+  renderMatrix(s);
+  // findings
+  const fc=document.getElementById('findings');
+  document.getElementById('find-count').textContent=s.findings.length+' total';
+  if(!s.findings.length){ fc.innerHTML=`<div class="empty"><div class="big">No weaknesses detected</div>This configuration passed every check in the rubric.</div>`; }
+  else{
+    fc.innerHTML=[...s.findings].sort((a,b)=>SEVW[b.severity]-SEVW[a.severity]).map(f=>{
+      const rail=f.derivation==='observed'?'var(--observed)':'var(--inferred)';
+      const dtag=f.derivation==='observed'?'observed':'inferred'+(f.confidence_pct!=null?` · ${f.confidence_pct}%`:'');
+      return `<div class="find"><div class="rail" style="background:${rail}"></div><div class="body">
+        <div class="r1"><span class="ft">${f.title}</span><span class="sev ${f.severity}">${f.severity}</span>
+          <span class="deriv ${f.derivation}">${dtag}</span></div>
+        <div class="detail">${f.detail}</div>
+        <div class="meta"><span class="m"><b>NIST/RFC:</b> ${f.nist_ref||'—'}</span>
+          <span class="m"><b>likelihood:</b> ${f.likelihood}</span><span class="m"><b>impact:</b> ${f.impact}</span></div>
+        <div class="rec">→ ${f.recommendation}</div></div></div>`;}).join('');
+  }
+  // model
+  const m=DATA.model_metrics;
+  document.getElementById('acc').textContent=(m.accuracy*100).toFixed(0)+'%';
+  document.getElementById('f1').textContent=m.f1_macro.toFixed(2);
+  document.getElementById('ntest').textContent=m.n_test;
+  const fi=Object.entries(m.feature_importance).slice(0,6);
+  const mx=Math.max(...fi.map(x=>x[1]));
+  document.getElementById('fimp').innerHTML=fi.map(([k,v])=>
+    `<div class="fi"><div class="l"><span>${k}</span><span>${(v*100).toFixed(0)}%</span></div>
+     <div class="bar"><i style="width:${(v/mx*100).toFixed(0)}%"></i></div></div>`).join('');
+  document.getElementById('splitnote').textContent=m.split;
+  renderReport();
+  requestAnimationFrame(()=>document.querySelectorAll('.meter i[data-w]').forEach(i=>i.style.width=i.dataset.w+'%'));
+}
+
+function renderMatrix(s){
+  const L=['low','medium','high'];
+  const lvl=(li,im)=>{const sc=L.indexOf(li)+L.indexOf(im); return sc>=3?'l2':sc>=2?'l1':'l0';};
+  let h='<div class="mx-corner"></div>';
+  h+='<div class="mx-h">Low impact</div><div class="mx-h">Med impact</div><div class="mx-h">High impact</div>';
+  for(const li of ['high','medium','low']){
+    h+=`<div class="mx-yl">${li} likelihood</div>`;
+    for(const im of L){
+      const cell=(s.threat_matrix[li+'|'+im]||[]);
+      h+=`<div class="cell ${lvl(li,im)}">`+cell.map(c=>`<span class="pill ${c.severity}">${c.id}</span>`).join('')+`</div>`;
+    }
+  }
+  document.getElementById('matrix').innerHTML=h;
+}
+function renderReport(){
+  const s=DATA.sessions[cur];
+  document.getElementById('report').innerHTML=mdToHtml(curReport==='exec'?s.exec_report:s.tech_report);
+}
+
+// controls
+const sw=document.getElementById('switch');
+[['weak','Weak config'],['strong','Strong config']].forEach(([k,lab],i)=>{
+  const b=document.createElement('button'); b.textContent=lab; if(i===0)b.className='on';
+  b.onclick=()=>{cur=k; [...sw.children].forEach(c=>c.classList.remove('on')); b.classList.add('on'); render();};
+  sw.appendChild(b);
+});
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+  curReport=b.dataset.r; document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); renderReport();
+});
+render();
+</script>
+</body>
+</html>'''
+
+HTML = HTML.replace("__DATA__", DATA_JSON)
+open("outputs/dashboard.html","w").write(HTML)
+open("dashboard.html","w").write(HTML)
+print("dashboard.html written:", len(HTML), "bytes")

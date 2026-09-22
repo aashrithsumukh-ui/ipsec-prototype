@@ -1,0 +1,257 @@
+{
+  "model_metrics": {
+    "accuracy": 0.7857142857142857,
+    "f1_macro": 0.7333333333333334,
+    "labels": [
+      "bulk",
+      "email",
+      "icmp",
+      "mixed",
+      "video",
+      "voip",
+      "web"
+    ],
+    "confusion": [
+      [
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    ],
+    "n_train": 42,
+    "n_test": 14,
+    "split": "held-out by config_id (disjoint tunnels)",
+    "feature_importance": {
+      "pps": 0.16618762910366058,
+      "iat_mean": 0.1268436312675476,
+      "pkt_size_p50": 0.1258571296930313,
+      "pkt_size_p90": 0.11780524253845215,
+      "pkt_size_mean": 0.11063966900110245,
+      "pkt_size_std": 0.09499381482601166,
+      "bytes_ratio_updown": 0.08106542378664017,
+      "burstiness": 0.05599769577383995,
+      "small_pkt_frac": 0.03387318179011345,
+      "pkt_size_p10": 0.033134810626506805,
+      "flow_dur_s": 0.026430007070302963,
+      "iat_std": 0.014135838486254215,
+      "large_pkt_frac": 0.013035988435149193
+    }
+  },
+  "anomaly_trained_on": 28,
+  "sessions": {
+    "weak": {
+      "risk_score": 20,
+      "subscores": {
+        "crypto_strength": 25,
+        "key_management": 40,
+        "forward_secrecy": 35,
+        "metadata_exposure": 60
+      },
+      "findings": [
+        {
+          "id": "ENC-3DES",
+          "title": "Deprecated cipher (3DES)",
+          "detail": "IKE SA negotiated 3des-cbc. 3DES is deprecated (64-bit block, Sweet32).",
+          "derivation": "observed",
+          "severity": "high",
+          "confidence": null,
+          "nist_ref": "NIST SP 800-77 Sec.3; RFC 8221",
+          "recommendation": "Move to AES-GCM (AES-256-GCM preferred).",
+          "likelihood": "medium",
+          "impact": "high",
+          "confidence_pct": null
+        },
+        {
+          "id": "INT-MD5",
+          "title": "Weak integrity (md5)",
+          "detail": "md5 is broken/deprecated for integrity protection.",
+          "derivation": "observed",
+          "severity": "high",
+          "confidence": null,
+          "nist_ref": "RFC 8247",
+          "recommendation": "Use SHA-256 or SHA-384 (or an AEAD cipher).",
+          "likelihood": "medium",
+          "impact": "high",
+          "confidence_pct": null
+        },
+        {
+          "id": "DH-2",
+          "title": "Legacy DH group 2",
+          "detail": "MODP group 2 is below current strength guidance.",
+          "derivation": "observed",
+          "severity": "high",
+          "confidence": null,
+          "nist_ref": "RFC 8247; NIST SP 800-77",
+          "recommendation": "Use group 19/20/21 (ECP) or 14+ (MODP) at minimum.",
+          "likelihood": "medium",
+          "impact": "high",
+          "confidence_pct": null
+        },
+        {
+          "id": "PFS-OFF",
+          "title": "Perfect Forward Secrecy disabled",
+          "detail": "No fresh DH on Child SA rekey \u2014 one key compromise exposes more traffic.",
+          "derivation": "inferred",
+          "severity": "high",
+          "confidence": 0.7,
+          "nist_ref": "NIST SP 800-77 Sec.4",
+          "recommendation": "Enable PFS (add a DH group to the ESP proposal).",
+          "likelihood": "medium",
+          "impact": "high",
+          "confidence_pct": 70
+        },
+        {
+          "id": "MODE-TRANSPORT",
+          "title": "Transport mode detected",
+          "detail": "Inner IP header is not encapsulated \u2014 endpoint addresses are exposed.",
+          "derivation": "inferred",
+          "severity": "low",
+          "confidence": 0.65,
+          "nist_ref": "RFC 4301 Sec.3.2",
+          "recommendation": "Use tunnel mode where addressing privacy matters.",
+          "likelihood": "low",
+          "impact": "medium",
+          "confidence_pct": 65
+        }
+      ],
+      "threat_matrix": {
+        "medium|high": [
+          {
+            "id": "ENC-3DES",
+            "title": "Deprecated cipher (3DES)",
+            "severity": "high"
+          },
+          {
+            "id": "INT-MD5",
+            "title": "Weak integrity (md5)",
+            "severity": "high"
+          },
+          {
+            "id": "DH-2",
+            "title": "Legacy DH group 2",
+            "severity": "high"
+          },
+          {
+            "id": "PFS-OFF",
+            "title": "Perfect Forward Secrecy disabled",
+            "severity": "high"
+          }
+        ],
+        "low|medium": [
+          {
+            "id": "MODE-TRANSPORT",
+            "title": "Transport mode detected",
+            "severity": "low"
+          }
+        ]
+      },
+      "observed": {
+        "enc_algo": "3des-cbc",
+        "integrity": "md5",
+        "dh_group": 2,
+        "ike_version": 1
+      },
+      "inferred": {
+        "traffic_type": "bulk",
+        "traffic_conf": 0.9299554228782654,
+        "pfs": "off",
+        "pfs_conf": 0.7,
+        "mode": "transport",
+        "mode_conf": 0.65,
+        "anomaly": false,
+        "anomaly_conf": 0.0
+      },
+      "session": "ikev1_transport_3des-cbc_md5_dh2_pfs-off_bulk.pcap",
+      "exec_report": "# Executive Summary \u2014 IPsecGuard AI\n**Session:** ikev1_transport_3des-cbc_md5_dh2_pfs-off_bulk.pcap\n**Risk score:** 20/100  \u00b7  **Posture:** Critical\n\n## Top risks\n- **Deprecated cipher (3DES)** (high, observed) \u2014 Move to AES-GCM (AES-256-GCM preferred).\n- **Weak integrity (md5)** (high, observed) \u2014 Use SHA-256 or SHA-384 (or an AEAD cipher).\n- **Legacy DH group 2** (high, observed) \u2014 Use group 19/20/21 (ECP) or 14+ (MODP) at minimum.",
+      "tech_report": "# Technical Report \u2014 IPsecGuard AI\nSession: `ikev1_transport_3des-cbc_md5_dh2_pfs-off_bulk.pcap`\n\nRisk score: **20/100**\n\n## Observed (read from plaintext IKE_SA_INIT)\n- enc_algo: `3des-cbc`\n- integrity: `md5`\n- dh_group: `2`\n- ike_version: `1`\n\n## Inferred (from encrypted-traffic metadata)\n- traffic_type: `bulk`\n- pfs: `off`\n- mode: `transport`\n- anomaly: `False`\n\n## Subscores\n- crypto strength: 25/100\n- key management: 40/100\n- forward secrecy: 35/100\n- metadata exposure: 60/100\n\n## Findings\n### [HIGH] Deprecated cipher (3DES)  \u2014  OBSERVED (certain)\nIKE SA negotiated 3des-cbc. 3DES is deprecated (64-bit block, Sweet32).\n- NIST/RFC: NIST SP 800-77 Sec.3; RFC 8221\n- Recommendation: Move to AES-GCM (AES-256-GCM preferred).\n\n### [HIGH] Weak integrity (md5)  \u2014  OBSERVED (certain)\nmd5 is broken/deprecated for integrity protection.\n- NIST/RFC: RFC 8247\n- Recommendation: Use SHA-256 or SHA-384 (or an AEAD cipher).\n\n### [HIGH] Legacy DH group 2  \u2014  OBSERVED (certain)\nMODP group 2 is below current strength guidance.\n- NIST/RFC: RFC 8247; NIST SP 800-77\n- Recommendation: Use group 19/20/21 (ECP) or 14+ (MODP) at minimum.\n\n### [HIGH] Perfect Forward Secrecy disabled  \u2014  INFERRED (70% confidence)\nNo fresh DH on Child SA rekey \u2014 one key compromise exposes more traffic.\n- NIST/RFC: NIST SP 800-77 Sec.4\n- Recommendation: Enable PFS (add a DH group to the ESP proposal).\n\n### [LOW] Transport mode detected  \u2014  INFERRED (65% confidence)\nInner IP header is not encapsulated \u2014 endpoint addresses are exposed.\n- NIST/RFC: RFC 4301 Sec.3.2\n- Recommendation: Use tunnel mode where addressing privacy matters.\n"
+    },
+    "strong": {
+      "risk_score": 100,
+      "subscores": {
+        "crypto_strength": 100,
+        "key_management": 100,
+        "forward_secrecy": 100,
+        "metadata_exposure": 90
+      },
+      "findings": [],
+      "threat_matrix": {},
+      "observed": {
+        "enc_algo": "aes256-gcm",
+        "integrity": "none",
+        "dh_group": 20,
+        "ike_version": 2
+      },
+      "inferred": {
+        "traffic_type": "web",
+        "traffic_conf": 0.8926868438720703,
+        "pfs": "on",
+        "pfs_conf": 0.7,
+        "mode": "tunnel",
+        "mode_conf": 0.65,
+        "anomaly": false,
+        "anomaly_conf": 0.0
+      },
+      "session": "ikev2_tunnel_aes256-gcm_none_dh20_pfs-on_web.pcap",
+      "exec_report": "# Executive Summary \u2014 IPsecGuard AI\n**Session:** ikev2_tunnel_aes256-gcm_none_dh20_pfs-on_web.pcap\n**Risk score:** 100/100  \u00b7  **Posture:** Strong\n\n## Top risks\n- No significant weaknesses detected.",
+      "tech_report": "# Technical Report \u2014 IPsecGuard AI\nSession: `ikev2_tunnel_aes256-gcm_none_dh20_pfs-on_web.pcap`\n\nRisk score: **100/100**\n\n## Observed (read from plaintext IKE_SA_INIT)\n- enc_algo: `aes256-gcm`\n- integrity: `none`\n- dh_group: `20`\n- ike_version: `2`\n\n## Inferred (from encrypted-traffic metadata)\n- traffic_type: `web`\n- pfs: `on`\n- mode: `tunnel`\n- anomaly: `False`\n\n## Subscores\n- crypto strength: 100/100\n- key management: 100/100\n- forward secrecy: 100/100\n- metadata exposure: 90/100\n\n## Findings"
+    }
+  }
+}
