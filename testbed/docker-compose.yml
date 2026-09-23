@@ -16,6 +16,14 @@ services:
     cap_add: ["NET_ADMIN", "SYS_MODULE"]
     networks: { vpnlab: { ipv4_address: 10.10.0.20 } }
     volumes: ["./captures:/captures"]
+  eve:                            # attacker relay, 10.10.0.30
+    build:
+      context: .
+      dockerfile: eve.Dockerfile
+    container_name: ipg_eve
+    environment:
+      - ATTACK=off
+    networks: { vpnlab: { ipv4_address: 10.10.0.30 } }
 networks:
   vpnlab:
     driver: bridge

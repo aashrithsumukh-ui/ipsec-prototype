@@ -11,6 +11,7 @@ Then open http://localhost:8000  (dashboard auto-uses the API when served here).
 import json, os, tempfile
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
+import pandas as pd
 from ipsecguard.synth import generate
 from ipsecguard.classifier import TrafficClassifier
 from ipsecguard.anomaly import AnomalyDetector
@@ -18,8 +19,14 @@ from ipsecguard.analyze import analyze_pcap
 
 app = FastAPI(title="IPsecGuard AI")
 
-# train once at startup (swap generate() for pd.read_csv('dataset.csv') on real data)
-_df = generate(160, 5)
+# train once at startup: prefer real testbed data, fall back to synthetic
+_real_csv = "testbed/dataset.csv"
+if __import__("os").path.exists(_real_csv):
+    _df = pd.read_csv(_real_csv)
+    print(f"[app] training on REAL data: {len(_df)} sessions from {_real_csv}")
+else:
+    _df = generate(160, 5)
+    print("[app] no real dataset found — training on synthetic data")
 _clf = TrafficClassifier(); _metrics = _clf.fit_eval(_df)
 _anom = AnomalyDetector().fit(_df)
 

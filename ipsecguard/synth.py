@@ -50,6 +50,11 @@ def _one_flow(rng, ttype):
         "small_pkt_frac": float((sizes < 300).mean()),
         "large_pkt_frac": float((sizes > 1000).mean()),
         "flow_dur_s":    dur,
+        "pkt_count":     max(5, round(dur * pps)),
+        "iat_cv":        float(iat_std / (iat_mean + 1e-6)),
+        "size_cv":       float(sizes.std() / (sizes.mean() + 1e-6)),
+        "iat_p10":       max(0.0, iat_mean - 1.2816 * iat_std),
+        "iat_p90":       iat_mean + 1.2816 * iat_std,
     }
 
 def generate(n_configs=140, sessions_per_config=4, seed=7):
