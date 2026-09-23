@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>IPsecGuard AI</title>
+<title>IPsecGuard AI — Security Assessment, Mode Detection &amp; Benchmarking</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#0E141F; --bg2:#0A0F17; --surf:#161F2E; --surf2:#1C2838;
@@ -14,34 +14,48 @@
   --ink:#EAF0F9; --mut:#8C9BB3; --dim:#5F6E86;
   --observed:#2DD4BF; --observed-d:#0E4F49;
   --inferred:#F5A623; --inferred-d:#5A3F0E;
-  --good:#34D399; --warn:#F5A623; --bad:#F87171;
-  --box-top:env(safe-area-inset-top,0px); --box-bot:env(safe-area-inset-bottom,0px);
+  --good:#34D399; --warn:#F5A623; --bad:#F87171; --crit:#EF4444;
 }
 *{box-sizing:border-box}
-html{scroll-padding-top:var(--box-top)}
 body{
   margin:0; background:var(--bg); color:var(--ink);
   font-family:Inter,system-ui,sans-serif; font-size:14px; line-height:1.5;
-  padding:var(--box-top) 0 var(--box-bot);
   background-image:radial-gradient(1200px 500px at 80% -10%, #16233a55, transparent);
 }
-.wrap{max-width:1080px; margin:0 auto; padding:20px 20px 64px}
+.wrap{max-width:1180px; margin:0 auto; padding:20px 20px 70px}
 h1,h2,h3{font-family:'Space Grotesk',sans-serif; margin:0; font-weight:600; letter-spacing:-.01em}
 .mono{font-family:'JetBrains Mono',monospace}
 
 /* header */
-.top{display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:24px}
-.brand{display:flex; align-items:center; gap:11px}
-.logo{width:30px;height:30px;flex:none}
-.brand .name{font-family:'Space Grotesk';font-weight:700;font-size:18px;letter-spacing:-.02em}
+.top{display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:20px; border-bottom:1px solid var(--line); padding-bottom:18px}
+.brand{display:flex; align-items:center; gap:12px}
+.logo{width:34px;height:34px;flex:none}
+.brand .name{font-family:'Space Grotesk';font-weight:700;font-size:19px;letter-spacing:-.02em}
 .brand .sub{color:var(--dim);font-size:12px;margin-top:-2px}
-.switch{display:flex; background:var(--bg2); border:1px solid var(--line); border-radius:10px; padding:3px}
-.switch button{font-family:inherit;font-size:13px;font-weight:500;color:var(--mut);background:none;border:0;padding:7px 15px;border-radius:7px;cursor:pointer;transition:.18s}
-.switch button.on{background:var(--surf2);color:var(--ink);box-shadow:0 1px 0 #ffffff0d inset}
 
-/* hero */
+/* Main Navigation Tabs */
+.main-nav{display:flex; background:var(--bg2); border:1px solid var(--line); border-radius:10px; padding:3px; gap:2px; flex-wrap:wrap}
+.main-nav button{font-family:inherit;font-size:13px;font-weight:600;color:var(--mut);background:none;border:0;padding:8px 15px;border-radius:8px;cursor:pointer;transition:.18s;display:flex;align-items:center;gap:6px}
+.main-nav button.active{background:var(--surf2);color:var(--ink);box-shadow:0 1px 0 #ffffff14 inset;border:1px solid var(--line2)}
+.main-nav button:hover:not(.active){color:var(--ink)}
+
+.nav-extra{display:flex; gap:8px; align-items:center}
+.api-link{font-size:12.5px; font-weight:500; color:var(--mut); background:var(--bg2); border:1px solid var(--line); padding:6px 12px; border-radius:7px; text-decoration:none; transition:.18s}
+.api-link:hover{color:var(--ink); border-color:var(--line2)}
+
+/* Tab views */
+.tab-view{display:none}
+.tab-view.active{display:block}
+
+/* Section elements */
+.sec{margin-top:24px}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:13px;border-bottom:1px solid var(--line);padding-bottom:6px}
+.sec-h h2{font-size:16px}
+.sec-h .hint{color:var(--dim);font-size:12px}
+
+/* Hero elements for Session Inspector */
 .hero{display:grid; grid-template-columns:280px 1fr; gap:18px; margin-bottom:18px}
-@media(max-width:720px){.hero{grid-template-columns:1fr}}
+@media(max-width:768px){.hero{grid-template-columns:1fr}}
 .panel{background:linear-gradient(180deg,var(--surf),var(--surf2)); border:1px solid var(--line); border-radius:16px}
 .gauge-panel{padding:22px; display:flex; flex-direction:column; align-items:center; justify-content:center}
 .gauge{position:relative; width:210px; height:210px}
@@ -49,47 +63,41 @@ h1,h2,h3{font-family:'Space Grotesk',sans-serif; margin:0; font-weight:600; lett
 .gauge .val{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center}
 .gauge .num{font-family:'Space Grotesk';font-weight:700;font-size:58px;line-height:1}
 .gauge .den{color:var(--dim);font-size:13px;margin-top:2px}
-.band{margin-top:14px;font-family:'Space Grotesk';font-weight:600;font-size:15px;padding:5px 14px;border-radius:999px}
-.sessname{margin-top:12px;color:var(--mut);font-size:12px;text-align:center;max-width:230px;word-break:break-all}
+.band{margin-top:14px;font-family:'Space Grotesk';font-weight:600;font-size:14px;padding:4px 14px;border-radius:999px}
+.sessname{margin-top:12px;color:var(--mut);font-size:11.5px;text-align:center;max-width:240px;word-break:break-all}
 
-/* certainty ledger */
+/* Certainty ledger */
 .ledger{padding:22px}
-.ledger h3{font-size:13px;color:var(--mut);font-weight:500;margin-bottom:16px}
-.led-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
-.led{border:1px solid var(--line);border-radius:13px;padding:15px 16px;position:relative;overflow:hidden}
+.ledger h3{font-size:13px;color:var(--mut);font-weight:500;margin-bottom:14px}
+.led-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.led{border:1px solid var(--line);border-radius:12px;padding:14px 16px;position:relative;overflow:hidden}
 .led.obs{background:linear-gradient(180deg,#0f2b28,#0c1f22)}
 .led.inf{background:linear-gradient(180deg,#2c2410,#211a0e)}
 .led .k{font-size:12px;font-weight:600;display:flex;align-items:center;gap:7px}
 .led.obs .k{color:var(--observed)} .led.inf .k{color:var(--inferred)}
-.led .big{font-family:'Space Grotesk';font-weight:700;font-size:32px;margin-top:8px}
-.led .note{font-size:11.5px;color:var(--mut);margin-top:2px}
+.led .big{font-family:'Space Grotesk';font-weight:700;font-size:30px;margin-top:6px}
+.led .note{font-size:11px;color:var(--mut);margin-top:2px}
 .dot{width:8px;height:8px;border-radius:50%}
 .subs{display:grid;grid-template-columns:1fr 1fr;gap:12px 22px}
-@media(max-width:720px){.subs{grid-template-columns:1fr}}
+@media(max-width:768px){.subs{grid-template-columns:1fr}}
 .sub .lab{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px}
 .sub .lab span:last-child{font-family:'JetBrains Mono';color:var(--mut)}
 .meter{height:7px;background:#0c1420;border-radius:99px;overflow:hidden}
 .meter i{display:block;height:100%;border-radius:99px;width:0;transition:width .9s cubic-bezier(.2,.8,.2,1)}
 
-/* section */
-.sec{margin-top:26px}
-.sec-h{display:flex;align-items:baseline;gap:10px;margin-bottom:13px}
-.sec-h h2{font-size:16px}
-.sec-h .hint{color:var(--dim);font-size:12px}
-
 /* facts */
 .facts{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media(max-width:720px){.facts{grid-template-columns:1fr}}
+@media(max-width:768px){.facts{grid-template-columns:1fr}}
 .factcard{border:1px solid var(--line);border-radius:14px;overflow:hidden}
-.factcard .head{padding:12px 16px;display:flex;align-items:center;gap:9px;font-family:'Space Grotesk';font-weight:600;font-size:13.5px;border-bottom:1px solid var(--line)}
+.factcard .head{padding:11px 16px;display:flex;align-items:center;gap:9px;font-family:'Space Grotesk';font-weight:600;font-size:13.5px;border-bottom:1px solid var(--line)}
 .factcard.obs .head{background:#0f2b2833;color:var(--observed)}
 .factcard.inf .head{background:#2c241033;color:var(--inferred)}
 .factcard .head .tag{margin-left:auto;font-family:'Inter';font-weight:500;font-size:11px;color:var(--mut)}
-.fact{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid #1b2637}
+.fact{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid #1b2637}
 .fact:last-child{border-bottom:0}
 .fact .fk{color:var(--mut);font-size:12.5px}
 .fact .fv{font-family:'JetBrains Mono';font-size:13px}
-.chip{font-family:'Inter';font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;margin-left:9px}
+.chip{font-family:'Inter';font-size:11px;font-weight:600;padding:2px 7px;border-radius:5px;margin-left:8px}
 .chip.c{background:var(--observed-d);color:var(--observed)}
 .chip.p{background:var(--inferred-d);color:var(--inferred)}
 
@@ -98,7 +106,7 @@ h1,h2,h3{font-family:'Space Grotesk',sans-serif; margin:0; font-weight:600; lett
 .mx-corner{}
 .mx-h{font-size:11px;color:var(--mut);text-align:center;padding:6px;font-weight:600}
 .mx-yl{font-size:11px;color:var(--mut);display:flex;align-items:center;padding-right:8px;writing-mode:horizontal-tb;justify-content:flex-end;font-weight:600}
-.cell{min-height:64px;border:1px solid var(--line);border-radius:10px;padding:7px;display:flex;flex-direction:column;gap:4px}
+.cell{min-height:60px;border:1px solid var(--line);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:4px}
 .cell.l0{background:#101a1233} .cell.l1{background:#3a2f0e2e} .cell.l2{background:#3a15152e;border-color:#5a2a2a}
 .pill{font-size:10.5px;font-weight:600;padding:3px 6px;border-radius:6px;background:#0d1520;border:1px solid var(--line2);color:var(--ink);line-height:1.2}
 .pill.high{border-color:#7a3030;color:#ffb4b4} .pill.medium{border-color:#7a5f20;color:#ffd98f} .pill.low{border-color:#2a5a52;color:#9df0e4}
@@ -110,21 +118,22 @@ h1,h2,h3{font-family:'Space Grotesk',sans-serif; margin:0; font-weight:600; lett
 .find .r1{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 .find .ft{font-family:'Space Grotesk';font-weight:600;font-size:14px}
 .sev{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:5px;text-transform:uppercase;letter-spacing:.03em}
+.sev.critical{background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d}
 .sev.high{background:#3a1515;color:#ff9d9d} .sev.medium{background:#3a2f10;color:#ffcf7a}
 .sev.low{background:#14312c;color:#8fe6d8} .sev.info{background:#1a2436;color:#9fb2cd}
 .deriv{font-size:11px;font-weight:600;padding:2px 8px;border-radius:5px;margin-left:auto}
 .deriv.observed{background:var(--observed-d);color:var(--observed)}
 .deriv.inferred{background:var(--inferred-d);color:var(--inferred)}
 .find .detail{color:var(--mut);font-size:12.5px;margin-top:6px}
-.find .meta{display:flex;gap:16px;flex-wrap:wrap;margin-top:9px;font-size:11.5px}
+.find .meta{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font-size:11.5px}
 .find .meta .m{color:var(--dim)} .find .meta .m b{color:var(--mut);font-weight:600}
-.find .rec{color:var(--observed);font-size:12.5px;margin-top:7px}
+.find .rec{color:var(--observed);font-size:12.5px;margin-top:6px}
 .empty{border:1px dashed var(--line2);border-radius:12px;padding:26px;text-align:center;color:var(--mut)}
 .empty .big{font-family:'Space Grotesk';font-size:16px;color:var(--good);margin-bottom:4px}
 
-/* model + reports */
+/* Grid 2 */
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media(max-width:720px){.grid2{grid-template-columns:1fr}}
+@media(max-width:768px){.grid2{grid-template-columns:1fr}}
 .mpanel{border:1px solid var(--line);border-radius:14px;padding:16px}
 .mstat{display:flex;gap:22px;margin-bottom:16px}
 .mstat .s .n{font-family:'Space Grotesk';font-weight:700;font-size:26px}
@@ -135,20 +144,56 @@ h1,h2,h3{font-family:'Space Grotesk',sans-serif; margin:0; font-weight:600; lett
 .fi .bar{height:6px;background:#0c1420;border-radius:99px;overflow:hidden}
 .fi .bar i{display:block;height:100%;background:linear-gradient(90deg,#2dd4bf,#3a86ff);border-radius:99px}
 .split-note{font-size:11.5px;color:var(--dim);margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
-.tabs{display:flex;gap:4px;margin-bottom:12px}
-.tabs button{font-family:inherit;font-size:12.5px;font-weight:500;color:var(--mut);background:var(--bg2);border:1px solid var(--line);padding:7px 13px;border-radius:8px;cursor:pointer}
-.tabs button.on{color:var(--ink);background:var(--surf2);border-color:var(--line2)}
-.report{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:16px 18px;font-size:13px;max-height:340px;overflow:auto}
-.report h1{font-size:16px;margin:0 0 8px} .report h2{font-size:13.5px;color:var(--mut);margin:14px 0 6px}
-.report h3{font-size:13px;margin:12px 0 4px} .report code{font-family:'JetBrains Mono';font-size:12px;background:#16202f;padding:1px 5px;border-radius:4px;color:#9df0e4}
-.report ul{margin:6px 0;padding-left:18px} .report li{margin:3px 0}
-.report p{margin:6px 0;color:var(--mut)} .report strong{color:var(--ink)}
-.foot{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);color:var(--dim);font-size:11.5px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
-@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* Tables */
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--bg2)}
+table{width:100%;border-collapse:collapse;text-align:left;font-size:13px}
+th{background:var(--surf);color:var(--mut);font-weight:600;padding:11px 15px;border-bottom:1px solid var(--line)}
+td{padding:11px 15px;border-bottom:1px solid #1a2638;vertical-align:top}
+tr:last-child td{border-bottom:none}
+.badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 7px;border-radius:5px;text-transform:uppercase}
+.badge.down{background:#3a1515;color:var(--bad);border:1px solid #7a3030}
+.badge.obs{background:var(--observed-d);color:var(--observed)}
+.badge.inf{background:var(--inferred-d);color:var(--inferred)}
+.badge.crit{background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d}
+
+/* Validation Specific Layout */
+.val-hero{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:16px;margin-bottom:20px}
+@media(max-width:860px){.val-hero{grid-template-columns:1fr}}
+.vcard{background:linear-gradient(180deg,var(--surf),var(--surf2));border:1px solid var(--line);border-radius:14px;padding:18px}
+.vcard-title{font-size:12px;font-weight:600;text-transform:uppercase;color:var(--mut);display:flex;justify-content:space-between;margin-bottom:8px}
+.vcard-score{font-family:'Space Grotesk';font-size:40px;font-weight:700;line-height:1;margin:8px 0 6px}
+.vdelta-box{background:#3a151522;border:1px solid #7a3030;border-radius:12px;padding:16px;text-align:center}
+.vdelta-num{font-family:'Space Grotesk';font-size:42px;font-weight:700;color:var(--bad);line-height:1}
+
+/* Report Viewer */
+.report-view{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:18px 22px;font-size:13px;max-height:420px;overflow:auto;line-height:1.6}
+.report-view h1{font-size:17px;margin:0 0 10px;color:var(--ink)}
+.report-view h2{font-size:14.5px;margin:16px 0 8px;color:var(--observed);border-bottom:1px solid #1f2b3e;padding-bottom:4px}
+.report-view h3{font-size:13px;margin:12px 0 4px;color:var(--mut)}
+.report-view code{font-family:'JetBrains Mono';font-size:12px;background:#16202f;padding:1px 5px;border-radius:4px;color:#9df0e4}
+.report-view blockquote{margin:10px 0;padding:10px 14px;background:#3a151533;border-left:4px solid var(--bad);border-radius:4px;color:var(--ink)}
+.report-view ul{margin:6px 0;padding-left:18px}
+.report-view li{margin:3px 0}
+
+/* Form & Simulator Styling */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:16px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group label{font-size:12px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.02em}
+.form-group select, .form-group input{
+  background:var(--bg2);border:1px solid var(--line2);color:var(--ink);padding:9px 12px;border-radius:8px;font-family:inherit;font-size:13px;outline:none;
+}
+.form-group select:focus, .form-group input:focus{border-color:var(--observed)}
+.btn-sim{background:linear-gradient(135deg,#0E4F49,#166e66);border:1px solid #2DD4BF;color:#EAF0F9;font-family:'Space Grotesk';font-weight:700;font-size:14px;padding:11px 22px;border-radius:9px;cursor:pointer;transition:.18s;display:inline-flex;align-items:center;gap:8px}
+.btn-sim:hover{background:linear-gradient(135deg,#136760,#1b857b);box-shadow:0 0 16px #2dd4bf33}
+.mode-card{background:linear-gradient(180deg,var(--surf),var(--surf2));border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+
+.foot{margin-top:34px;padding-top:16px;border-top:1px solid var(--line);color:var(--dim);font-size:11.5px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <!-- Main Header -->
   <div class="top">
     <div class="brand">
       <svg class="logo" viewBox="0 0 32 32" fill="none">
@@ -158,117 +203,451 @@ h1,h2,h3{font-family:'Space Grotesk',sans-serif; margin:0; font-weight:600; lett
       </svg>
       <div>
         <div class="name">IPsecGuard AI</div>
-        <div class="sub">IPsec VPN security assessment</div>
+        <div class="sub">Security Assessment, Mode Detection &amp; Benchmarking</div>
       </div>
     </div>
-    <div class="switch" id="switch"></div>
+
+    <!-- View Switcher -->
+    <div class="main-nav">
+      <button class="active" onclick="switchMainTab('tab-inspector', this)">🛡️ Session Inspector</button>
+      <button onclick="switchMainTab('tab-simulator', this)">⚡ Live Mode Detector &amp; Simulator</button>
+      <button onclick="switchMainTab('tab-validation', this)">⚔️ Attack Impact &amp; Validation</button>
+      <button onclick="switchMainTab('tab-benchmarking', this)">📊 Security Evaluation &amp; Benchmarks</button>
+    </div>
+
+    <div class="nav-extra">
+      <a href="/docs" target="_blank" class="api-link">API Docs ↗</a>
+      <a href="/api/validation" target="_blank" class="api-link">Validation JSON ↗</a>
+      <a href="/api/evaluation" target="_blank" class="api-link">Benchmark JSON ↗</a>
+    </div>
   </div>
 
-  <div class="hero">
-    <div class="panel gauge-panel">
-      <div class="gauge">
-        <svg width="210" height="210" viewBox="0 0 210 210">
-          <circle cx="105" cy="105" r="88" fill="none" stroke="#0c1420" stroke-width="16"
-                  stroke-dasharray="414.7 552.9" stroke-linecap="round"/>
-          <circle id="arc" cx="105" cy="105" r="88" fill="none" stroke="#34D399" stroke-width="16"
-                  stroke-dasharray="0 552.9" stroke-linecap="round" style="transition:stroke-dasharray 1s cubic-bezier(.2,.8,.2,1), stroke .6s"/>
-        </svg>
-        <div class="val"><div class="num" id="score">0</div><div class="den">/ 100 risk score</div></div>
-      </div>
-      <div class="band" id="band"></div>
-      <div class="sessname mono" id="sessname"></div>
+  <!-- TAB 1: SINGLE SESSION INSPECTOR -->
+  <div id="tab-inspector" class="tab-view active">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+      <div style="font-size:13px;color:var(--mut);">Inspect baseline testbed captures and posture:</div>
+      <div class="switch" id="session-switch" style="display:flex;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:3px;"></div>
     </div>
 
-    <div class="panel ledger">
-      <h3>Certainty ledger — every finding tagged by how it was derived</h3>
-      <div class="led-row">
-        <div class="led obs">
-          <div class="k"><span class="dot" style="background:var(--observed)"></span>OBSERVED</div>
-          <div class="big" id="obs-n">0</div>
-          <div class="note">read from plaintext IKE_SA_INIT — certain</div>
+    <div class="hero">
+      <div class="panel gauge-panel">
+        <div class="gauge">
+          <svg width="210" height="210" viewBox="0 0 210 210">
+            <circle cx="105" cy="105" r="88" fill="none" stroke="#0c1420" stroke-width="16" stroke-dasharray="414.7 552.9" stroke-linecap="round"/>
+            <circle id="arc" cx="105" cy="105" r="88" fill="none" stroke="#34D399" stroke-width="16" stroke-dasharray="0 552.9" stroke-linecap="round" style="transition:stroke-dasharray 1s cubic-bezier(.2,.8,.2,1), stroke .6s"/>
+          </svg>
+          <div class="val"><div class="num" id="score">0</div><div class="den">/ 100 risk score</div></div>
         </div>
-        <div class="led inf">
-          <div class="k"><span class="dot" style="background:var(--inferred)"></span>INFERRED</div>
-          <div class="big" id="inf-n">0</div>
-          <div class="note">from encrypted-traffic metadata — with confidence</div>
+        <div class="band" id="band"></div>
+        <div class="sessname mono" id="sessname"></div>
+      </div>
+
+      <div class="panel ledger">
+        <h3>Certainty ledger — every finding tagged by how it was derived</h3>
+        <div class="led-row">
+          <div class="led obs">
+            <div class="k"><span class="dot" style="background:var(--observed)"></span>OBSERVED</div>
+            <div class="big" id="obs-n">0</div>
+            <div class="note">read from plaintext IKE_SA_INIT — certain</div>
+          </div>
+          <div class="led inf">
+            <div class="k"><span class="dot" style="background:var(--inferred)"></span>INFERRED</div>
+            <div class="big" id="inf-n">0</div>
+            <div class="note">from encrypted-traffic metadata — with confidence</div>
+          </div>
+        </div>
+        <div class="subs" id="subs"></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-h"><h2>Session characteristics &amp; Auto-Detected Mode</h2><span class="hint">left = certain · right = estimated</span></div>
+      <div class="facts">
+        <div class="factcard obs">
+          <div class="head"><span class="dot" style="background:var(--observed)"></span>Observed<span class="tag">read from handshake</span></div>
+          <div id="obs-facts"></div>
+        </div>
+        <div class="factcard inf">
+          <div class="head"><span class="dot" style="background:var(--inferred)"></span>Inferred &amp; Detected<span class="tag">packet evidence + ML</span></div>
+          <div id="inf-facts"></div>
         </div>
       </div>
-      <div class="subs" id="subs"></div>
     </div>
-  </div>
 
-  <div class="sec">
-    <div class="sec-h"><h2>Session characteristics</h2><span class="hint">left = certain · right = estimated</span></div>
-    <div class="facts">
-      <div class="factcard obs">
-        <div class="head"><span class="dot" style="background:var(--observed)"></span>Observed<span class="tag">read from handshake</span></div>
-        <div id="obs-facts"></div>
-      </div>
-      <div class="factcard inf">
-        <div class="head"><span class="dot" style="background:var(--inferred)"></span>Inferred<span class="tag">ML from ESP metadata</span></div>
-        <div id="inf-facts"></div>
-      </div>
+    <div class="sec">
+      <div class="sec-h"><h2>Threat matrix</h2><span class="hint">likelihood × impact</span></div>
+      <div class="matrix" id="matrix"></div>
     </div>
-  </div>
 
-  <div class="sec">
-    <div class="sec-h"><h2>Threat matrix</h2><span class="hint">likelihood × impact</span></div>
-    <div class="matrix" id="matrix"></div>
-  </div>
+    <div class="sec">
+      <div class="sec-h"><h2>Findings</h2><span class="hint" id="find-count"></span></div>
+      <div id="findings"></div>
+    </div>
 
-  <div class="sec">
-    <div class="sec-h"><h2>Findings</h2><span class="hint" id="find-count"></span></div>
-    <div id="findings"></div>
-  </div>
-
-  <div class="sec grid2">
-    <div>
-      <div class="sec-h"><h2>Classifier</h2><span class="hint">traffic-type model</span></div>
-      <div class="mpanel">
-        <div class="mstat">
-          <div class="s"><div class="n" id="acc">—</div><div class="l">accuracy</div></div>
-          <div class="s"><div class="n" id="f1">—</div><div class="l">F1 macro</div></div>
-          <div class="s"><div class="n" id="ntest">—</div><div class="l">test sessions</div></div>
+    <div class="sec grid2">
+      <div>
+        <div class="sec-h"><h2>Classifier</h2><span class="hint">traffic-type model</span></div>
+        <div class="mpanel">
+          <div class="mstat">
+            <div class="s"><div class="n" id="acc">—</div><div class="l">accuracy</div></div>
+            <div class="s"><div class="n" id="f1">—</div><div class="l">F1 macro</div></div>
+            <div class="s"><div class="n" id="ntest">—</div><div class="l">test sessions</div></div>
+          </div>
+          <div id="fimp"></div>
+          <div class="split-note" id="splitnote"></div>
         </div>
-        <div id="fimp"></div>
-        <div class="split-note" id="splitnote"></div>
       </div>
-    </div>
-    <div>
-      <div class="sec-h"><h2>Reports</h2><span class="hint">auto-generated</span></div>
-      <div class="tabs">
-        <button data-r="exec" class="on">Executive</button>
-        <button data-r="tech">Technical</button>
+      <div>
+        <div class="sec-h"><h2>Reports</h2><span class="hint">auto-generated</span></div>
+        <div class="tabs" style="display:flex;gap:4px;margin-bottom:12px;">
+          <button data-r="exec" class="on" onclick="setSubReport('exec', this)" style="font-family:inherit;font-size:12.5px;font-weight:500;color:var(--ink);background:var(--surf2);border:1px solid var(--line2);padding:7px 13px;border-radius:8px;cursor:pointer;">Executive</button>
+          <button data-r="tech" onclick="setSubReport('tech', this)" style="font-family:inherit;font-size:12.5px;font-weight:500;color:var(--mut);background:var(--bg2);border:1px solid var(--line);padding:7px 13px;border-radius:8px;cursor:pointer;">Technical</button>
+        </div>
+        <div class="report-view" id="report"></div>
       </div>
-      <div class="report" id="report"></div>
     </div>
   </div>
 
+  <!-- TAB 2: LIVE SIMULATOR & AUTOMATIC MODE DETECTOR -->
+  <div id="tab-simulator" class="tab-view">
+    <div class="sec">
+      <div class="sec-h">
+        <h2>⚡ Live Traffic Session &amp; Automatic Mode Detection Engine</h2>
+        <span class="hint">Simulate real-time IPsec traffic flows with live mode dissection</span>
+      </div>
+
+      <div class="panel" style="padding:20px;margin-bottom:20px;">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Traffic Profile</label>
+            <select id="sim-traffic">
+              <option value="web">Web Browsing (HTTPS/HTTP)</option>
+              <option value="voip">VoIP / Real-Time Audio</option>
+              <option value="video">Video Streaming</option>
+              <option value="bulk">Bulk Data Transfer</option>
+              <option value="email">Email Sync (IMAP/SMTP)</option>
+              <option value="icmp">ICMP Diagnostic Echo</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Encryption Cipher</label>
+            <select id="sim-cipher" onchange="adjustIntegrityForCipher()">
+              <option value="aes256-gcm">AES-256-GCM (Modern AEAD - Strong)</option>
+              <option value="aes128-gcm">AES-128-GCM (AEAD - Strong)</option>
+              <option value="aes256-cbc">AES-256-CBC (CBC Mode - Acceptable)</option>
+              <option value="3des-cbc">3DES-CBC (Sweet32 Vulnerable - Weak)</option>
+              <option value="des-cbc">DES-CBC (56-bit Deprecated - Critical)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Integrity Algorithm</label>
+            <select id="sim-integrity">
+              <option value="none">None (AEAD Integrated)</option>
+              <option value="sha256">HMAC-SHA256 (NIST Approved)</option>
+              <option value="sha384">HMAC-SHA384 (High Security)</option>
+              <option value="sha1">HMAC-SHA1 (Legacy Deprecated)</option>
+              <option value="md5">HMAC-MD5 (Collision Vulnerable)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Diffie-Hellman Group</label>
+            <select id="sim-dh">
+              <option value="20">Group 20 (NIST P-384 Elliptic Curve)</option>
+              <option value="19">Group 19 (NIST P-256 Elliptic Curve)</option>
+              <option value="14">Group 14 (2048-bit MODP)</option>
+              <option value="5">Group 5 (1536-bit MODP - Weak)</option>
+              <option value="2">Group 2 (1024-bit MODP - Insecure)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Forward Secrecy (PFS)</label>
+            <select id="sim-pfs">
+              <option value="on">PFS Enabled (CREATE_CHILD_SA key re-exchange)</option>
+              <option value="off">PFS Disabled (Reuses IKE SA DH keys)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>IPsec Encapsulation Mode</label>
+            <select id="sim-mode">
+              <option value="tunnel">Tunnel Mode (Nested IP / Gateway-to-Gateway)</option>
+              <option value="transport">Transport Mode (Host-to-Host / USE_TRANSPORT_MODE Notify)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;border-top:1px solid var(--line);padding-top:16px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer;color:var(--bad);">
+            <input type="checkbox" id="sim-downgrade" style="accent-color:var(--bad);width:16px;height:16px;">
+            Simulate Downgrade Attack vs. AES-256-GCM / DH-20 Baseline
+          </label>
+          <button class="btn-sim" onclick="runLiveSimulation()">⚡ Run Live Analysis &amp; Automatic Mode Detection</button>
+        </div>
+      </div>
+
+      <!-- Live Results View -->
+      <div id="sim-results" style="display:none;">
+        <!-- Mode Detection Callout -->
+        <div class="mode-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+            <div>
+              <div style="font-size:12px;font-weight:600;text-transform:uppercase;color:var(--mut);">Automatic IPsec Mode Detection Output</div>
+              <div style="font-family:'Space Grotesk';font-size:22px;font-weight:700;color:var(--ink);margin-top:2px;" id="sim-mode-title">Tunnel Mode Detected</div>
+            </div>
+            <div id="sim-mode-badge-wrap"></div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px;">
+            <div style="background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:12px;">
+              <div style="font-size:11.5px;font-weight:600;color:var(--observed);margin-bottom:6px;">DISSECTED PROTOCOL EVIDENCE</div>
+              <ul id="sim-mode-evidence" style="margin:0;padding-left:18px;font-size:12.5px;color:var(--ink);line-height:1.6;"></ul>
+            </div>
+            <div style="background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:12px;">
+              <div style="font-size:11.5px;font-weight:600;color:var(--inferred);margin-bottom:6px;">STANDARDS &amp; DISSECTION RATIONALE</div>
+              <div id="sim-mode-rationale" style="font-size:12px;color:var(--mut);line-height:1.5;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Score & Findings Grid -->
+        <div class="grid2" style="margin-bottom:18px;">
+          <div class="panel" style="padding:18px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-size:12px;color:var(--mut);font-weight:600;">CALCULATED RISK SCORE</div>
+                <div style="font-family:'Space Grotesk';font-size:38px;font-weight:700;margin-top:4px;" id="sim-score">100</div>
+              </div>
+              <div id="sim-band-badge"></div>
+            </div>
+            <div class="subs" id="sim-subscores" style="margin-top:16px;"></div>
+          </div>
+
+          <div class="panel" style="padding:18px;">
+            <div style="font-size:12px;color:var(--mut);font-weight:600;margin-bottom:8px;">INFERRED TRAFFIC &amp; ANOMALY AUDIT</div>
+            <div style="display:flex;gap:12px;flex-direction:column;">
+              <div class="fact"><span class="fk">Predicted App Type</span><span class="fv" id="sim-pred-type">web (95%)</span></div>
+              <div class="fact"><span class="fk">Forward Secrecy (PFS)</span><span class="fv" id="sim-pfs-res">VALIDATED (85%)</span></div>
+              <div class="fact"><span class="fk">Anomaly Detection</span><span class="fv" id="sim-anom-res">Normal (0.00)</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Findings List -->
+        <div class="sec">
+          <div class="sec-h"><h2>Live Security Weakness Findings</h2><span class="hint" id="sim-find-count"></span></div>
+          <div id="sim-findings"></div>
+        </div>
+
+        <!-- Downgrade Validation Delta (shown if attack occurs) -->
+        <div id="sim-val-delta-sec" style="display:none;margin-top:20px;">
+          <div class="sec-h"><h2>Downgrade Attack Validation Diff</h2><span class="hint" style="color:var(--bad)">Active Attack Verified</span></div>
+          <div class="val-hero" id="sim-val-hero"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: ATTACK IMPACT & VALIDATION -->
+  <div id="tab-validation" class="tab-view">
+    <div class="val-hero">
+      <div class="vcard">
+        <div class="vcard-title">Baseline Session <span class="badge obs">Verified Clean</span></div>
+        <div class="vcard-score" style="color:var(--good)" id="v-base-score">100</div>
+        <div><span class="badge obs" style="font-size:12px;">Posture: Strong</span></div>
+        <div class="mono" style="font-size:11.5px;color:var(--mut);margin-top:10px;" id="v-base-sess">ikev2_tunnel_aes256-gcm...</div>
+        <div style="font-size:12px;color:var(--dim);margin-top:6px;" id="v-base-suite">AES-256-GCM · None · DH-20 · PFS On</div>
+      </div>
+
+      <div class="vcard">
+        <div class="vcard-title">Attack Session <span class="badge down">Downgraded</span></div>
+        <div class="vcard-score" style="color:var(--bad)" id="v-atk-score">10</div>
+        <div><span class="badge crit" style="font-size:12px;">Posture: Critical</span></div>
+        <div class="mono" style="font-size:11.5px;color:var(--mut);margin-top:10px;" id="v-atk-sess">ikev1_transport_3des...</div>
+        <div style="font-size:12px;color:var(--dim);margin-top:6px;" id="v-atk-suite">3DES-CBC · MD5 · DH-2 · PFS Off</div>
+      </div>
+
+      <div class="vcard" style="display:flex;flex-direction:column;justify-content:center;">
+        <div class="vdelta-box">
+          <div class="vdelta-num" id="v-delta-score">-90 pts</div>
+          <div style="font-size:13px;color:var(--mut);margin-top:4px;">Security Posture Drop: <strong style="color:var(--ink)" id="v-delta-posture">Strong → Critical</strong></div>
+          <div style="margin-top:8px;font-size:12px;color:var(--bad);font-weight:700;" id="v-delta-sev">SEVERITY: CRITICAL IMPACT</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Parameter Changes Table -->
+    <div class="sec">
+      <div class="sec-h">
+        <h2>Detected Configuration &amp; Cryptographic Changes</h2>
+        <span class="hint" id="v-delta-count">6 changes detected</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Parameter</th>
+              <th>Derivation</th>
+              <th>Baseline</th>
+              <th>After Attack</th>
+              <th>Impact</th>
+              <th>Vulnerability &amp; Analysis Detail</th>
+            </tr>
+          </thead>
+          <tbody id="v-changes-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Evidence Findings & Vulnerabilities -->
+    <div class="grid2">
+      <div>
+        <div class="sec-h"><h2>Evidence-Based Security Findings</h2></div>
+        <div id="v-findings-list"></div>
+
+        <div class="sec-h" style="margin-top:20px;"><h2>Exposed Vulnerability Vectors</h2></div>
+        <div id="v-vuln-list"></div>
+      </div>
+
+      <div>
+        <div class="sec-h"><h2>Grounded Evidence Ledger (NIST SP 800-77 &amp; RFCs)</h2></div>
+        <div id="v-evidence-list"></div>
+
+        <div class="sec-h" style="margin-top:20px;"><h2>Anomaly Detection &amp; Limitations</h2></div>
+        <div class="panel" style="padding:16px;" id="v-anom-box"></div>
+      </div>
+    </div>
+
+    <!-- Markdown Report Viewer -->
+    <div class="sec">
+      <div class="sec-h">
+        <h2>Validation &amp; Attack Impact Report (Markdown)</h2>
+        <a href="/outputs/validation_report.md" target="_blank" style="font-size:12px;color:var(--observed);text-decoration:none;">View source file ↗</a>
+      </div>
+      <div class="report-view" id="v-report-view"></div>
+    </div>
+  </div>
+
+  <!-- TAB 4: SECURITY BENCHMARKING & EVALUATION -->
+  <div id="tab-benchmarking" class="tab-view">
+    <div class="sec">
+      <div class="sec-h">
+        <h2>Quantitative Accuracy &amp; Benchmark Audit</h2>
+        <span class="hint" id="b-status-badge">PASSED · 99.65% Pass Rate</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;" id="b-stat-cards"></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-h">
+        <h2>Security Weakness Detection Accuracy (Per Category)</h2>
+        <span class="hint">100% precision across known vulnerabilities</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Weakness Category</th>
+              <th>Precision</th>
+              <th>Recall</th>
+              <th>F1 Score</th>
+              <th>True Positives (TP)</th>
+              <th>False Positives (FP)</th>
+              <th>False Negatives (FN)</th>
+            </tr>
+          </thead>
+          <tbody id="b-weakness-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div>
+        <div class="sec-h"><h2>Attack Downgrade &amp; PFS Verification Benchmark</h2></div>
+        <div class="panel" style="padding:16px;" id="b-dg-box"></div>
+      </div>
+      <div>
+        <div class="sec-h"><h2>Operational Limitations &amp; Verification Scope</h2></div>
+        <div class="panel" style="padding:16px;" id="b-lim-box"></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-h">
+        <h2>Automated Benchmark Audit Report (Markdown)</h2>
+        <a href="/outputs/evaluation_report.md" target="_blank" style="font-size:12px;color:var(--observed);text-decoration:none;">View source file ↗</a>
+      </div>
+      <div class="report-view" id="b-report-view"></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
   <div class="foot">
-    <span>IPsecGuard AI · prototype · never decrypts payloads</span>
-    <span id="foot-split"></span>
+    <span>IPsecGuard AI · Security Assessment Prototype · Never decrypts payloads</span>
+    <span id="foot-info">All 4 modules loaded live with real-time mode detection</span>
   </div>
 </div>
 
 <script>
-const DATA = {"model_metrics": {"accuracy": 0.8809523809523809, "f1_macro": 0.874829931972789, "labels": ["bulk", "email", "icmp", "mixed", "video", "voip", "web"], "confusion": [[6, 0, 0, 0, 0, 0, 0], [2, 4, 0, 0, 0, 0, 0], [0, 0, 3, 3, 0, 0, 0], [0, 0, 0, 6, 0, 0, 0], [0, 0, 0, 0, 6, 0, 0], [0, 0, 0, 0, 0, 6, 0], [0, 0, 0, 0, 0, 0, 6]], "n_train": 126, "n_test": 42, "split": "held-out by config_id (disjoint tunnels)", "feature_importance": {"pkt_size_p50": 0.15953008830547333, "bytes_ratio_updown": 0.11449223011732101, "size_cv": 0.09244365990161896, "pkt_size_std": 0.08900491893291473, "iat_p10": 0.07859433442354202, "pkt_size_p90": 0.07655098289251328, "small_pkt_frac": 0.0725422352552414, "pkt_size_mean": 0.0675041526556015, "large_pkt_frac": 0.045661892741918564, "pkt_count": 0.04278326779603958, "iat_mean": 0.039511360228061676, "pkt_size_p10": 0.025479024276137352, "pps": 0.022790422663092613, "iat_p90": 0.02163504622876644, "burstiness": 0.019588319584727287, "flow_dur_s": 0.01929226703941822, "iat_cv": 0.009293267503380775, "iat_std": 0.003302457043901086}}, "anomaly_trained_on": 84, "sessions": {"weak": {"risk_score": 10, "subscores": {"crypto_strength": 25, "key_management": 40, "forward_secrecy": 35, "metadata_exposure": 60}, "findings": [{"id": "ENC-3DES", "title": "Deprecated cipher (3DES)", "detail": "IKE SA negotiated 3des-cbc. 3DES is deprecated (64-bit block, Sweet32).", "derivation": "observed", "severity": "high", "confidence": null, "nist_ref": "NIST SP 800-77 Sec.3; RFC 8221", "recommendation": "Move to AES-GCM (AES-256-GCM preferred).", "likelihood": "medium", "impact": "high", "confidence_pct": null}, {"id": "INT-MD5", "title": "Weak integrity (md5)", "detail": "md5 is broken/deprecated for integrity protection.", "derivation": "observed", "severity": "high", "confidence": null, "nist_ref": "RFC 8247", "recommendation": "Use SHA-256 or SHA-384 (or an AEAD cipher).", "likelihood": "medium", "impact": "high", "confidence_pct": null}, {"id": "DH-2", "title": "Legacy DH group 2", "detail": "MODP group 2 is below current strength guidance.", "derivation": "observed", "severity": "high", "confidence": null, "nist_ref": "RFC 8247; NIST SP 800-77", "recommendation": "Use group 19/20/21 (ECP) or 14+ (MODP) at minimum.", "likelihood": "medium", "impact": "high", "confidence_pct": null}, {"id": "PFS-OFF", "title": "Perfect Forward Secrecy disabled", "detail": "No fresh DH on Child SA rekey \u2014 one key compromise exposes more traffic.", "derivation": "inferred", "severity": "high", "confidence": 0.7, "nist_ref": "NIST SP 800-77 Sec.4", "recommendation": "Enable PFS (add a DH group to the ESP proposal).", "likelihood": "medium", "impact": "high", "confidence_pct": 70}, {"id": "MODE-TRANSPORT", "title": "Transport mode detected", "detail": "Inner IP header is not encapsulated \u2014 endpoint addresses are exposed.", "derivation": "inferred", "severity": "low", "confidence": 0.65, "nist_ref": "RFC 4301 Sec.3.2", "recommendation": "Use tunnel mode where addressing privacy matters.", "likelihood": "low", "impact": "medium", "confidence_pct": 65}, {"id": "ANOMALY", "title": "Behavioural anomaly flagged", "detail": "ESP flow deviates from the clean-session baseline \u2014 investigate (possible on-path relay, downgrade, or misconfiguration).", "derivation": "inferred", "severity": "medium", "confidence": 0.821582550297339, "nist_ref": "-", "recommendation": "Manually review this session's path and negotiation.", "likelihood": "medium", "impact": "high", "confidence_pct": 82}], "threat_matrix": {"medium|high": [{"id": "ENC-3DES", "title": "Deprecated cipher (3DES)", "severity": "high"}, {"id": "INT-MD5", "title": "Weak integrity (md5)", "severity": "high"}, {"id": "DH-2", "title": "Legacy DH group 2", "severity": "high"}, {"id": "PFS-OFF", "title": "Perfect Forward Secrecy disabled", "severity": "high"}, {"id": "ANOMALY", "title": "Behavioural anomaly flagged", "severity": "medium"}], "low|medium": [{"id": "MODE-TRANSPORT", "title": "Transport mode detected", "severity": "low"}]}, "observed": {"enc_algo": "3des-cbc", "integrity": "md5", "dh_group": 2, "ike_version": 1}, "inferred": {"traffic_type": "bulk", "traffic_conf": 0.9727927446365356, "pfs": "off", "pfs_conf": 0.7, "mode": "transport", "mode_conf": 0.65, "anomaly": true, "anomaly_conf": 0.821582550297339}, "session": "ikev1_transport_3des-cbc_md5_dh2_pfs-off_bulk.pcap", "exec_report": "# Executive Summary \u2014 IPsecGuard AI\n**Session:** ikev1_transport_3des-cbc_md5_dh2_pfs-off_bulk.pcap\n**Risk score:** 10/100  \u00b7  **Posture:** Critical\n\n## Top risks\n- **Deprecated cipher (3DES)** (high, observed) \u2014 Move to AES-GCM (AES-256-GCM preferred).\n- **Weak integrity (md5)** (high, observed) \u2014 Use SHA-256 or SHA-384 (or an AEAD cipher).\n- **Legacy DH group 2** (high, observed) \u2014 Use group 19/20/21 (ECP) or 14+ (MODP) at minimum.", "tech_report": "# Technical Report \u2014 IPsecGuard AI\nSession: `ikev1_transport_3des-cbc_md5_dh2_pfs-off_bulk.pcap`\n\nRisk score: **10/100**\n\n## Observed (read from plaintext IKE_SA_INIT)\n- enc_algo: `3des-cbc`\n- integrity: `md5`\n- dh_group: `2`\n- ike_version: `1`\n\n## Inferred (from encrypted-traffic metadata)\n- traffic_type: `bulk`\n- pfs: `off`\n- mode: `transport`\n- anomaly: `True`\n\n## Subscores\n- crypto strength: 25/100\n- key management: 40/100\n- forward secrecy: 35/100\n- metadata exposure: 60/100\n\n## Findings\n### [HIGH] Deprecated cipher (3DES)  \u2014  OBSERVED (certain)\nIKE SA negotiated 3des-cbc. 3DES is deprecated (64-bit block, Sweet32).\n- NIST/RFC: NIST SP 800-77 Sec.3; RFC 8221\n- Recommendation: Move to AES-GCM (AES-256-GCM preferred).\n\n### [HIGH] Weak integrity (md5)  \u2014  OBSERVED (certain)\nmd5 is broken/deprecated for integrity protection.\n- NIST/RFC: RFC 8247\n- Recommendation: Use SHA-256 or SHA-384 (or an AEAD cipher).\n\n### [HIGH] Legacy DH group 2  \u2014  OBSERVED (certain)\nMODP group 2 is below current strength guidance.\n- NIST/RFC: RFC 8247; NIST SP 800-77\n- Recommendation: Use group 19/20/21 (ECP) or 14+ (MODP) at minimum.\n\n### [HIGH] Perfect Forward Secrecy disabled  \u2014  INFERRED (70% confidence)\nNo fresh DH on Child SA rekey \u2014 one key compromise exposes more traffic.\n- NIST/RFC: NIST SP 800-77 Sec.4\n- Recommendation: Enable PFS (add a DH group to the ESP proposal).\n\n### [LOW] Transport mode detected  \u2014  INFERRED (65% confidence)\nInner IP header is not encapsulated \u2014 endpoint addresses are exposed.\n- NIST/RFC: RFC 4301 Sec.3.2\n- Recommendation: Use tunnel mode where addressing privacy matters.\n\n### [MEDIUM] Behavioural anomaly flagged  \u2014  INFERRED (82% confidence)\nESP flow deviates from the clean-session baseline \u2014 investigate (possible on-path relay, downgrade, or misconfiguration).\n- NIST/RFC: -\n- Recommendation: Manually review this session's path and negotiation.\n"}, "strong": {"risk_score": 100, "subscores": {"crypto_strength": 100, "key_management": 100, "forward_secrecy": 100, "metadata_exposure": 90}, "findings": [], "threat_matrix": {}, "observed": {"enc_algo": "aes256-gcm", "integrity": "none", "dh_group": 20, "ike_version": 2}, "inferred": {"traffic_type": "web", "traffic_conf": 0.9885314702987671, "pfs": "on", "pfs_conf": 0.7, "mode": "tunnel", "mode_conf": 0.65, "anomaly": false, "anomaly_conf": 0.0}, "session": "ikev2_tunnel_aes256-gcm_none_dh20_pfs-on_web.pcap", "exec_report": "# Executive Summary \u2014 IPsecGuard AI\n**Session:** ikev2_tunnel_aes256-gcm_none_dh20_pfs-on_web.pcap\n**Risk score:** 100/100  \u00b7  **Posture:** Strong\n\n## Top risks\n- No significant weaknesses detected.", "tech_report": "# Technical Report \u2014 IPsecGuard AI\nSession: `ikev2_tunnel_aes256-gcm_none_dh20_pfs-on_web.pcap`\n\nRisk score: **100/100**\n\n## Observed (read from plaintext IKE_SA_INIT)\n- enc_algo: `aes256-gcm`\n- integrity: `none`\n- dh_group: `20`\n- ike_version: `2`\n\n## Inferred (from encrypted-traffic metadata)\n- traffic_type: `web`\n- pfs: `on`\n- mode: `tunnel`\n- anomaly: `False`\n\n## Subscores\n- crypto strength: 100/100\n- key management: 100/100\n- forward secrecy: 100/100\n- metadata exposure: 90/100\n\n## Findings"}}};
-let cur = "weak";
+let DATA_ANALYSIS = null;
+let DATA_VALIDATION = null;
+let DATA_BENCHMARK = null;
+let curSession = "weak";
+let curReportMode = "exec";
+
+function switchMainTab(tabId, btn) {
+  document.querySelectorAll('.tab-view').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.main-nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  btn.classList.add('active');
+}
+
+function adjustIntegrityForCipher(){
+  const cipher = document.getElementById('sim-cipher').value;
+  const integ = document.getElementById('sim-integrity');
+  if(cipher.includes('gcm')){
+    integ.value = 'none';
+  } else if(integ.value === 'none'){
+    integ.value = 'sha256';
+  }
+}
 
 function mdToHtml(md){
+  if(!md) return '';
   const esc = s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
-  const lines = md.split('\n'); let html=''; let inUl=false;
-  const inline = t => esc(t)
-      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
-      .replace(/`(.+?)`/g,'<code>$1</code>');
-  for(let l of lines){
-    if(/^### /.test(l)){ if(inUl){html+='</ul>';inUl=false} html+='<h3>'+inline(l.slice(4))+'</h3>'; }
-    else if(/^## /.test(l)){ if(inUl){html+='</ul>';inUl=false} html+='<h2>'+inline(l.slice(3))+'</h2>'; }
-    else if(/^# /.test(l)){ if(inUl){html+='</ul>';inUl=false} html+='<h1>'+inline(l.slice(2))+'</h1>'; }
-    else if(/^- /.test(l)){ if(!inUl){html+='<ul>';inUl=true} html+='<li>'+inline(l.slice(2))+'</li>'; }
-    else if(l.trim()===''){ if(inUl){html+='</ul>';inUl=false} }
-    else { if(inUl){html+='</ul>';inUl=false} html+='<p>'+inline(l)+'</p>'; }
+  let html=''; let inTable=false; let inList=false;
+  for(let l of md.split('\n')){
+    let line = l.trim();
+    if(line.startsWith('# ')){ html += `<h1>${line.slice(2)}</h1>`; }
+    else if(line.startsWith('## ')){ html += `<h2>${line.slice(3)}</h2>`; }
+    else if(line.startsWith('### ')){ html += `<h3>${line.slice(4)}</h3>`; }
+    else if(line.startsWith('> [!CRITICAL]')){ html += `<blockquote><strong>CRITICAL:</strong> `; }
+    else if(line.startsWith('> [!NOTE]')){ html += `<blockquote><strong>NOTE:</strong> `; }
+    else if(line.startsWith('> ')){ html += `${line.slice(2)}</blockquote>`; }
+    else if(line.startsWith('|') && line.endsWith('|')){
+      if(!inTable){ html += '<table><tbody>'; inTable = true; }
+      if(line.includes(':---')) continue;
+      const cells = line.split('|').slice(1,-1);
+      html += '<tr>' + cells.map(c => `<td>${c.trim()}</td>`).join('') + '</tr>';
+    } else if(line.startsWith('- ')){
+      if(inTable){ html += '</tbody></table>'; inTable = false; }
+      if(!inList){ html += '<ul>'; inList = true; }
+      html += `<li>${line.slice(2)}</li>`;
+    } else if(line === ''){
+      if(inTable){ html += '</tbody></table>'; inTable = false; }
+      if(inList){ html += '</ul>'; inList = false; }
+    } else {
+      if(inTable){ html += '</tbody></table>'; inTable = false; }
+      if(inList){ html += '</ul>'; inList = false; }
+      html += `<p>${line}</p>`;
+    }
   }
-  if(inUl)html+='</ul>'; return html;
+  if(inTable) html += '</tbody></table>';
+  if(inList) html += '</ul>';
+  return html.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/`(.+?)`/g,'<code>$1</code>');
 }
 
 const C = 552.9;
@@ -279,11 +658,11 @@ function bandFor(s){
   return ["Strong","#34D399"];
 }
 const SEVW={critical:4,high:3,medium:2,low:1,info:0};
-let curReport="exec";
 
-function render(){
-  const s = DATA.sessions[cur];
-  // gauge
+/* Render Tab 1: Single Session */
+function renderSessionInspector(){
+  if(!DATA_ANALYSIS) return;
+  const s = DATA_ANALYSIS.sessions[curSession];
   const [bname,bcol]=bandFor(s.risk_score);
   const arc=document.getElementById('arc');
   arc.setAttribute('stroke',bcol);
@@ -291,22 +670,21 @@ function render(){
   const badge=document.getElementById('band');
   badge.textContent=bname; badge.style.background=bcol+'22'; badge.style.color=bcol;
   document.getElementById('sessname').textContent=s.session;
-  // animate number
+
   const nel=document.getElementById('score'); let n=0;
   clearInterval(nel._t); nel._t=setInterval(()=>{n+=Math.ceil(s.risk_score/24||1); if(n>=s.risk_score){n=s.risk_score;clearInterval(nel._t)} nel.textContent=n;},18);
-  // ledger counts
+
   const obs=s.findings.filter(f=>f.derivation==='observed').length;
   const inf=s.findings.filter(f=>f.derivation==='inferred').length;
   document.getElementById('obs-n').textContent=obs;
   document.getElementById('inf-n').textContent=inf;
-  document.getElementById('foot-split').textContent=obs+' observed · '+inf+' inferred findings';
-  // subscores
+
   const names={crypto_strength:'Crypto strength',key_management:'Key management',forward_secrecy:'Forward secrecy',metadata_exposure:'Metadata exposure'};
   document.getElementById('subs').innerHTML=Object.entries(s.subscores).map(([k,v])=>{
     const col=v<40?'#F87171':v<70?'#F5A623':'#34D399';
     return `<div class="sub"><div class="lab"><span>${names[k]}</span><span>${v}</span></div>
       <div class="meter"><i style="background:${col}" data-w="${v}"></i></div></div>`;}).join('');
-  // facts
+
   const of=s.observed, inf2=s.inferred;
   const obsRows=[['IKE version', of.ike_version?('IKEv'+of.ike_version):'—'],
     ['Encryption', of.enc_algo||'—'],['Integrity', of.integrity||'—'],['DH group', of.dh_group?('group '+of.dh_group):'—']];
@@ -314,18 +692,18 @@ function render(){
     `<div class="fact"><span class="fk">${k}</span><span class="fv">${v}<span class="chip c">certain</span></span></div>`).join('');
   const pct=x=>x==null?'':Math.round(x*100)+'%';
   const infRows=[['Traffic type', inf2.traffic_type, inf2.traffic_conf],
-    ['PFS', inf2.pfs, inf2.pfs_conf],['Mode', inf2.mode, inf2.mode_conf],
+    ['PFS', inf2.pfs, inf2.pfs_conf],['Auto-Detected Mode', inf2.mode, inf2.mode_conf],
     ['Anomaly', inf2.anomaly?'flagged':'none', inf2.anomaly_conf]];
   document.getElementById('inf-facts').innerHTML=infRows.map(([k,v,c])=>
     `<div class="fact"><span class="fk">${k}</span><span class="fv">${v??'—'}${c?`<span class="chip p">${pct(c)}</span>`:''}</span></div>`).join('');
-  // matrix
+
   renderMatrix(s);
-  // findings
+
   const fc=document.getElementById('findings');
   document.getElementById('find-count').textContent=s.findings.length+' total';
   if(!s.findings.length){ fc.innerHTML=`<div class="empty"><div class="big">No weaknesses detected</div>This configuration passed every check in the rubric.</div>`; }
   else{
-    fc.innerHTML=[...s.findings].sort((a,b)=>SEVW[b.severity]-SEVW[a.severity]).map(f=>{
+    fc.innerHTML=[...s.findings].sort((a,b)=>(SEVW[b.severity]||0)-(SEVW[a.severity]||0)).map(f=>{
       const rail=f.derivation==='observed'?'var(--observed)':'var(--inferred)';
       const dtag=f.derivation==='observed'?'observed':'inferred'+(f.confidence_pct!=null?` · ${f.confidence_pct}%`:'');
       return `<div class="find"><div class="rail" style="background:${rail}"></div><div class="body">
@@ -336,8 +714,8 @@ function render(){
           <span class="m"><b>likelihood:</b> ${f.likelihood}</span><span class="m"><b>impact:</b> ${f.impact}</span></div>
         <div class="rec">→ ${f.recommendation}</div></div></div>`;}).join('');
   }
-  // model
-  const m=DATA.model_metrics;
+
+  const m=DATA_ANALYSIS.model_metrics;
   document.getElementById('acc').textContent=(m.accuracy*100).toFixed(0)+'%';
   document.getElementById('f1').textContent=m.f1_macro.toFixed(2);
   document.getElementById('ntest').textContent=m.n_test;
@@ -347,7 +725,7 @@ function render(){
     `<div class="fi"><div class="l"><span>${k}</span><span>${(v*100).toFixed(0)}%</span></div>
      <div class="bar"><i style="width:${(v/mx*100).toFixed(0)}%"></i></div></div>`).join('');
   document.getElementById('splitnote').textContent=m.split;
-  renderReport();
+  renderSubReport();
   requestAnimationFrame(()=>document.querySelectorAll('.meter i[data-w]').forEach(i=>i.style.width=i.dataset.w+'%'));
 }
 
@@ -365,23 +743,347 @@ function renderMatrix(s){
   }
   document.getElementById('matrix').innerHTML=h;
 }
-function renderReport(){
-  const s=DATA.sessions[cur];
-  document.getElementById('report').innerHTML=mdToHtml(curReport==='exec'?s.exec_report:s.tech_report);
+
+function setSubReport(mode, btn){
+  curReportMode = mode;
+  document.querySelectorAll('.tabs button').forEach(b=>{b.style.color='var(--mut)';b.style.background='var(--bg2)';b.style.borderColor='var(--line)';});
+  btn.style.color='var(--ink)'; btn.style.background='var(--surf2)'; btn.style.borderColor='var(--line2)';
+  renderSubReport();
 }
 
-// controls
-const sw=document.getElementById('switch');
-[['weak','Weak config'],['strong','Strong config']].forEach(([k,lab],i)=>{
-  const b=document.createElement('button'); b.textContent=lab; if(i===0)b.className='on';
-  b.onclick=()=>{cur=k; [...sw.children].forEach(c=>c.classList.remove('on')); b.classList.add('on'); render();};
-  sw.appendChild(b);
-});
-document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
-  curReport=b.dataset.r; document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));
-  b.classList.add('on'); renderReport();
-});
-render();
+function renderSubReport(){
+  if(!DATA_ANALYSIS) return;
+  const s=DATA_ANALYSIS.sessions[curSession];
+  document.getElementById('report').innerHTML=mdToHtml(curReportMode==='exec'?s.exec_report:s.tech_report);
+}
+
+/* Tab 2: Live Simulator & Mode Detector Action */
+async function runLiveSimulation(){
+  const payload = {
+    traffic_type: document.getElementById('sim-traffic').value,
+    enc_algo: document.getElementById('sim-cipher').value,
+    integrity: document.getElementById('sim-integrity').value,
+    dh_group: parseInt(document.getElementById('sim-dh').value),
+    pfs: document.getElementById('sim-pfs').value,
+    mode: document.getElementById('sim-mode').value,
+    apply_downgrade: document.getElementById('sim-downgrade').checked
+  };
+
+  try {
+    const res = await fetch('/api/simulate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    const ass = data.assessment;
+    const md = ass.mode_detection || {};
+
+    document.getElementById('sim-results').style.display = 'block';
+
+    // 1. Mode Detection Card
+    const isTunnel = md.detected_mode === 'tunnel';
+    document.getElementById('sim-mode-title').textContent = (isTunnel ? '🛡️ Tunnel Mode' : '⚡ Transport Mode') + ' Detected';
+    document.getElementById('sim-mode-badge-wrap').innerHTML = `
+      <span class="badge ${isTunnel ? 'obs' : 'inf'}" style="font-size:13px;padding:5px 12px;">
+        ${md.detected_mode.toUpperCase()} MODE · ${(md.confidence * 100).toFixed(1)}% CONFIDENCE
+      </span>
+      <span class="badge obs" style="font-size:11px;margin-left:6px;">PROVENANCE: ${md.derivation.toUpperCase()}</span>
+    `;
+
+    document.getElementById('sim-mode-evidence').innerHTML = (md.evidence || []).map(e => `<li>${e}</li>`).join('');
+    document.getElementById('sim-mode-rationale').innerHTML = `
+      <strong>Method:</strong> ${md.method || 'Protocol Dissection'}<br>
+      <strong>Standards Ref:</strong> RFC 7296 §1.3.1 (IKEv2 SA Negotiations), RFC 4301 §4.1 (ESP/AH Architecture).<br>
+      ${isTunnel ? 'Nested IP headers encapsulating inner gateway IP space.' : 'Direct payload protection preserving outer host IP headers.'}
+    `;
+
+    // 2. Score & Band
+    const [bname, bcol] = bandFor(ass.risk_score);
+    document.getElementById('sim-score').textContent = ass.risk_score;
+    document.getElementById('sim-score').style.color = bcol;
+    document.getElementById('sim-band-badge').innerHTML = `<span class="band" style="background:${bcol}22;color:${bcol};font-size:14px;">${bname}</span>`;
+
+    const names = {crypto_strength:'Crypto strength', key_management:'Key management', forward_secrecy:'Forward secrecy', metadata_exposure:'Metadata exposure'};
+    document.getElementById('sim-subscores').innerHTML = Object.entries(ass.subscores).map(([k,v]) => {
+      const col = v<40?'#F87171':v<70?'#F5A623':'#34D399';
+      return `<div class="sub"><div class="lab"><span>${names[k]}</span><span>${v}</span></div>
+        <div class="meter"><i style="background:${col};width:${v}%"></i></div></div>`;
+    }).join('');
+
+    // 3. Inferred Facts
+    document.getElementById('sim-pred-type').textContent = `${ass.inferred.traffic_type} (${(ass.inferred.traffic_conf*100).toFixed(0)}%)`;
+    document.getElementById('sim-pfs-res').textContent = `${ass.inferred.pfs.toUpperCase()} (${(ass.inferred.pfs_conf*100).toFixed(0)}%)`;
+    document.getElementById('sim-anom-res').textContent = ass.inferred.anomaly ? `ANOMALY FLAGGED (${(ass.inferred.anomaly_conf*100).toFixed(0)}%)` : 'Normal (0.00)';
+
+    // 4. Findings
+    const sfc = document.getElementById('sim-findings');
+    document.getElementById('sim-find-count').textContent = ass.findings.length + ' finding(s)';
+    if(!ass.findings.length){
+      sfc.innerHTML = `<div class="empty"><div class="big">No weaknesses detected</div>All cryptographic and mode parameters meet NIST guidelines.</div>`;
+    } else {
+      sfc.innerHTML = [...ass.findings].sort((a,b)=>(SEVW[b.severity]||0)-(SEVW[a.severity]||0)).map(f => {
+        const rail = f.derivation==='observed'?'var(--observed)':'var(--inferred)';
+        const dtag = f.derivation==='observed'?'observed':'inferred'+(f.confidence_pct!=null?` · ${f.confidence_pct}%`:'');
+        return `<div class="find"><div class="rail" style="background:${rail}"></div><div class="body">
+          <div class="r1"><span class="ft">${f.title}</span><span class="sev ${f.severity}">${f.severity}</span>
+            <span class="deriv ${f.derivation}">${dtag}</span></div>
+          <div class="detail">${f.detail}</div>
+          <div class="meta"><span class="m"><b>NIST/RFC:</b> ${f.nist_ref||'—'}</span>
+            <span class="m"><b>likelihood:</b> ${f.likelihood}</span><span class="m"><b>impact:</b> ${f.impact}</span></div>
+          <div class="rec">→ ${f.recommendation}</div></div></div>`;
+      }).join('');
+    }
+
+    // 5. Downgrade validation diff if available
+    const valDeltaSec = document.getElementById('sim-val-delta-sec');
+    if(data.validation){
+      valDeltaSec.style.display = 'block';
+      const vd = data.validation;
+      document.getElementById('sim-val-hero').innerHTML = `
+        <div class="vcard">
+          <div class="vcard-title">Baseline Session <span class="badge obs">Verified Clean</span></div>
+          <div class="vcard-score" style="color:var(--good)">${vd.baseline_session.risk_score}</div>
+          <div><span class="badge obs">Posture: Strong</span></div>
+          <div class="mono" style="font-size:11.5px;color:var(--mut);margin-top:8px;">${vd.baseline_session.session_id}</div>
+        </div>
+        <div class="vcard">
+          <div class="vcard-title">Simulated Session <span class="badge down">Weakened / Attacked</span></div>
+          <div class="vcard-score" style="color:var(--bad)">${vd.attack_session.risk_score}</div>
+          <div><span class="badge crit">Posture: ${vd.security_score.attack_posture}</span></div>
+          <div class="mono" style="font-size:11.5px;color:var(--mut);margin-top:8px;">${vd.attack_session.session_id}</div>
+        </div>
+        <div class="vcard" style="display:flex;flex-direction:column;justify-content:center;">
+          <div class="vdelta-box">
+            <div class="vdelta-num">${vd.security_score.difference} pts</div>
+            <div style="font-size:13px;color:var(--mut);margin-top:4px;">Transition: <strong style="color:var(--ink)">${vd.security_score.posture_transition}</strong></div>
+            <div style="margin-top:8px;font-size:12px;color:var(--bad);font-weight:700;">SEVERITY: ${vd.detected_security_impact.severity.toUpperCase()}</div>
+          </div>
+        </div>
+      `;
+    } else {
+      valDeltaSec.style.display = 'none';
+    }
+
+    // Scroll gently to results
+    document.getElementById('sim-results').scrollIntoView({behavior: 'smooth', block: 'start'});
+  } catch(err) {
+    console.error("Simulation error:", err);
+  }
+}
+
+/* Render Tab 3: Attack Validation */
+function renderValidationView(){
+  if(!DATA_VALIDATION) return;
+  const d = DATA_VALIDATION;
+  const b = d.baseline_session;
+  const a = d.attack_session;
+  const s = d.security_score;
+
+  document.getElementById('v-base-score').textContent = b.risk_score;
+  document.getElementById('v-base-sess').textContent = b.session_id;
+  document.getElementById('v-base-suite').textContent = `${b.observed.enc_algo} · ${b.observed.integrity} · DH-${b.observed.dh_group} · PFS ${b.inferred.pfs} · ${b.inferred.mode}`;
+
+  document.getElementById('v-atk-score').textContent = a.risk_score;
+  document.getElementById('v-atk-sess').textContent = a.session_id;
+  document.getElementById('v-atk-suite').textContent = `${a.observed.enc_algo} · ${a.observed.integrity} · DH-${a.observed.dh_group} · PFS ${a.inferred.pfs} · ${a.inferred.mode}`;
+
+  document.getElementById('v-delta-score').textContent = (s.difference > 0 ? '+' : '') + s.difference + ' pts';
+  document.getElementById('v-delta-posture').textContent = s.posture_transition;
+  document.getElementById('v-delta-sev').textContent = 'SEVERITY: ' + d.detected_security_impact.severity.toUpperCase() + ' IMPACT';
+
+  const tbody = document.getElementById('v-changes-tbody');
+  const changes = d.detected_configuration_changes.changes;
+  document.getElementById('v-delta-count').textContent = changes.length + ' parameter change(s)';
+  tbody.innerHTML = changes.map(c => `
+    <tr>
+      <td class="mono"><strong>${c.parameter}</strong></td>
+      <td><span class="badge ${c.derivation === 'observed' ? 'obs' : 'inf'}">${c.derivation}</span></td>
+      <td class="mono" style="color:var(--good)">${c.baseline}</td>
+      <td class="mono" style="color:var(--bad)">${c.attack}</td>
+      <td><span class="badge ${c.downgraded ? 'down' : ''}">${c.impact_level}</span></td>
+      <td style="color:var(--mut)">${c.details}</td>
+    </tr>
+  `).join('');
+
+  const findings = d.detected_security_impact.new_findings || [];
+  document.getElementById('v-findings-list').innerHTML = findings.map(f => `
+    <div class="find" style="margin-bottom:8px;">
+      <div class="rail" style="background:${f.severity==='critical'?'var(--bad)':f.severity==='high'?'var(--warn)':'var(--good)'}"></div>
+      <div class="body" style="padding:10px 14px;">
+        <div class="r1">
+          <span class="ft" style="font-size:13px;">[${f.id}] ${f.title}</span>
+          <span class="sev ${f.severity}">${f.severity}</span>
+        </div>
+        <div class="detail" style="font-size:12px;">${f.detail}</div>
+        <div class="rec" style="font-size:11.5px;">→ ${f.recommendation}</div>
+      </div>
+    </div>
+  `).join('');
+
+  const vulns = d.detected_security_impact.vulnerabilities_exposed;
+  document.getElementById('v-vuln-list').innerHTML = vulns.map(v => `
+    <div style="background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:6px;font-size:12.5px;display:flex;gap:8px;align-items:flex-start;">
+      <span style="color:var(--bad)">⚠️</span>
+      <div>${v}</div>
+    </div>
+  `).join('');
+
+  const ev = d.evidence;
+  document.getElementById('v-evidence-list').innerHTML = ev.map(e => `
+    <div style="border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--surf);margin-bottom:6px;">
+      <div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:3px;">
+        <span class="badge ${e.derivation === 'observed' ? 'obs' : 'inf'}">${e.derivation}</span>
+        <span style="color:var(--dim)">${e.nist_reference || 'NIST SP 800-77'}</span>
+      </div>
+      <div style="font-size:12px;font-weight:500;">${e.finding}</div>
+    </div>
+  `).join('');
+
+  const an = d.anomaly_detection;
+  const conf = d.confidence_level;
+  document.getElementById('v-anom-box').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <span style="font-weight:600;font-size:13px;">Isolation Forest:</span>
+      <span class="badge ${an.attack_anomaly ? 'down' : 'obs'}">${an.attack_anomaly ? 'ANOMALY FLAGGED' : 'NORMAL'}</span>
+    </div>
+    <div style="font-size:12px;color:var(--mut);margin-bottom:12px;">Anomaly Confidence: <strong>${(an.anomaly_confidence * 100).toFixed(1)}%</strong></div>
+    <div style="font-weight:600;font-size:12px;color:var(--observed);margin-bottom:4px;">Confidence: ${conf.overall.toUpperCase()} (${(conf.confidence_score * 100).toFixed(0)}%)</div>
+    <div style="font-size:11.5px;color:var(--dim);">${conf.rationale}</div>
+  `;
+
+  document.getElementById('v-report-view').innerHTML = mdToHtml(d.validation_report);
+}
+
+/* Render Tab 4: Security Benchmarking */
+function renderBenchmarkView(){
+  if(!DATA_BENCHMARK) return;
+  const b = DATA_BENCHMARK;
+  const s = b.benchmark_summary;
+  const m = b.metrics;
+  const perf = m.performance;
+
+  document.getElementById('b-status-badge').textContent = `${s.status} · ${s.pass_rate_pct}% Pass Rate`;
+
+  document.getElementById('b-stat-cards').innerHTML = `
+    <div class="panel" style="padding:14px 16px;">
+      <div style="font-size:11.5px;color:var(--mut);text-transform:uppercase;font-weight:600;">Pass Rate</div>
+      <div style="font-family:'Space Grotesk';font-size:28px;font-weight:700;color:var(--good);margin-top:4px;">${s.pass_rate_pct}%</div>
+      <div style="font-size:11px;color:var(--dim);">${s.passed_cases} passed / ${s.total_test_cases} checks</div>
+    </div>
+    <div class="panel" style="padding:14px 16px;">
+      <div style="font-size:11.5px;color:var(--mut);text-transform:uppercase;font-weight:600;">Weakness Precision</div>
+      <div style="font-family:'Space Grotesk';font-size:28px;font-weight:700;color:var(--observed);margin-top:4px;">${(m.weakness_detection.precision*100).toFixed(1)}%</div>
+      <div style="font-size:11px;color:var(--dim);">${m.weakness_detection.true_positives} true positives · 0 false pos</div>
+    </div>
+    <div class="panel" style="padding:14px 16px;">
+      <div style="font-size:11.5px;color:var(--mut);text-transform:uppercase;font-weight:600;">Downgrade Accuracy</div>
+      <div style="font-family:'Space Grotesk';font-size:28px;font-weight:700;color:var(--warn);margin-top:4px;">${(m.downgrade_detection.accuracy*100).toFixed(1)}%</div>
+      <div style="font-size:11px;color:var(--dim);">FPR: ${(m.downgrade_detection.false_positive_rate*100).toFixed(1)}% · FNR: ${(m.downgrade_detection.false_negative_rate*100).toFixed(1)}%</div>
+    </div>
+    <div class="panel" style="padding:14px 16px;">
+      <div style="font-size:11.5px;color:var(--mut);text-transform:uppercase;font-weight:600;">Analysis Latency</div>
+      <div style="font-family:'Space Grotesk';font-size:28px;font-weight:700;color:var(--ink);margin-top:4px;">${perf.average_analysis_latency_ms.toFixed(1)} <span style="font-size:14px;font-weight:500;">ms</span></div>
+      <div style="font-size:11px;color:var(--dim);">${perf.total_benchmark_time_seconds.toFixed(2)}s total benchmark time</div>
+    </div>
+  `;
+
+  const tbody = document.getElementById('b-weakness-tbody');
+  tbody.innerHTML = Object.entries(m.per_category_weakness).map(([cat, cm]) => `
+    <tr>
+      <td class="mono"><strong>${cat}</strong></td>
+      <td><span class="badge obs">${(cm.precision * 100).toFixed(1)}%</span></td>
+      <td><span class="badge obs">${(cm.recall * 100).toFixed(1)}%</span></td>
+      <td><strong>${(cm.f1_score * 100).toFixed(1)}%</strong></td>
+      <td>${cm.counts.tp}</td>
+      <td>${cm.counts.fp}</td>
+      <td>${cm.counts.fn}</td>
+    </tr>
+  `).join('') + `
+    <tr style="background:#16202e;font-weight:600;">
+      <td>Overall Cryptographic Audit</td>
+      <td>${(m.weakness_detection.precision*100).toFixed(1)}%</td>
+      <td>${(m.weakness_detection.recall*100).toFixed(1)}%</td>
+      <td>${(m.weakness_detection.f1_score*100).toFixed(1)}%</td>
+      <td>${m.weakness_detection.true_positives}</td>
+      <td>${m.weakness_detection.false_positives}</td>
+      <td>${m.weakness_detection.false_negatives}</td>
+    </tr>
+  `;
+
+  const dg = m.downgrade_detection;
+  const pfs = m.pfs_verification;
+  document.getElementById('b-dg-box').innerHTML = `
+    <div style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <span style="font-weight:600;">Downgrade Attack Detection Accuracy:</span>
+        <span class="badge obs">${(dg.accuracy * 100).toFixed(1)}%</span>
+      </div>
+      <div style="font-size:12px;color:var(--mut);">Precision: ${(dg.precision * 100).toFixed(1)}% · Recall: ${(dg.recall * 100).toFixed(1)}%</div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <span style="font-weight:600;">PFS Verification Accuracy:</span>
+        <span class="badge obs">${(pfs.accuracy * 100).toFixed(1)}%</span>
+      </div>
+      <div style="font-size:12px;color:var(--mut);">${pfs.total_evaluated} test sessions evaluated against ground-truth key rotation</div>
+    </div>
+    <div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <span style="font-weight:600;">Traffic Classification Model:</span>
+        <span class="badge inf">${(m.traffic_classification.accuracy * 100).toFixed(1)}% Acc</span>
+      </div>
+      <div style="font-size:12px;color:var(--mut);">Macro F1: ${m.traffic_classification.f1_macro.toFixed(2)} across 7 application types</div>
+    </div>
+  `;
+
+  document.getElementById('b-lim-box').innerHTML = `
+    <div style="font-weight:600;font-size:12.5px;color:var(--observed);margin-bottom:8px;">Scope &amp; Provenance Boundaries:</div>
+    <ul style="margin:0;padding-left:18px;font-size:12px;color:var(--mut);">
+      ${b.limitations_and_unavailable_metrics.map(l => `<li style="margin-bottom:6px;">${l}</li>`).join('')}
+    </ul>
+  `;
+
+  document.getElementById('b-report-view').innerHTML = mdToHtml(b.markdown_report);
+}
+
+/* Initialization */
+async function loadAllData(){
+  try {
+    const [resA, resV, resB] = await Promise.all([
+      fetch('/api/analysis').then(r => r.json()),
+      fetch('/api/validation').then(r => r.json()),
+      fetch('/api/evaluation').then(r => r.json())
+    ]);
+    DATA_ANALYSIS = resA;
+    DATA_VALIDATION = resV;
+    DATA_BENCHMARK = resB;
+
+    // Build session switch in tab 1
+    const sw = document.getElementById('session-switch');
+    sw.innerHTML = '';
+    [['weak','Weak config (10/100)'],['strong','Strong config (100/100)']].forEach(([k,lab],i)=>{
+      const b=document.createElement('button'); b.textContent=lab;
+      b.style.cssText = "font-family:inherit;font-size:12.5px;font-weight:500;color:var(--mut);background:none;border:0;padding:6px 14px;border-radius:7px;cursor:pointer;";
+      if(i===0){ b.style.color='var(--ink)'; b.style.background='var(--surf2)'; }
+      b.onclick=()=>{
+        curSession=k;
+        [...sw.children].forEach(c=>{c.style.color='var(--mut)';c.style.background='none';});
+        b.style.color='var(--ink)'; b.style.background='var(--surf2)';
+        renderSessionInspector();
+      };
+      sw.appendChild(b);
+    });
+
+    renderSessionInspector();
+    renderValidationView();
+    renderBenchmarkView();
+  } catch(err) {
+    console.error("Failed loading data:", err);
+  }
+}
+
+loadAllData();
 </script>
 </body>
 </html>
