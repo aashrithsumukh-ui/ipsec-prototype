@@ -4,17 +4,22 @@
     result = analyze_pcap("cap.pcap", clf, anom)
 
 This is the production path: real capture -> observed parse + flow features ->
-ML inference -> NIST scoring -> tagged findings. Same models, same scoring as
-the synthetic demo; only the front door changes.
+automatic mode detection -> ML inference -> NIST scoring -> tagged findings.
 """
 from .features import extract_flow_features
-from .parser import parse_ike
+from .parser import parse_ike, validate_ike_parameters
 from .scoring import assess
 from .report import executive_md, technical_md
+from .mode_detector import detect_ipsec_mode
 
-def analyze_pcap(pcap_path, clf, anom, pfs_hint=None, mode_hint=None):
-    observed = parse_ike(pcap_path)                 # certain fields
-    feats = extract_flow_features(pcap_path)        # ESP metadata
+def analyze_pcap(pcap_path, clf, anom, pfs_hint=None, mode_hint=None, fallback_hint=None, expected_parameters=None):
+    observed = parse_ike(pcap_path, fallback_hint=fallback_hint)    # certain fields with evidence classification
+    feats = extract_flow_features(pcap_path)                        # ESP metadata
+    mode_detection = detect_ipsec_mode(pcap_path, fallback_hint=mode_hint)
+    ike_validation = validate_ike_parameters(observed, reference_data=expected_parameters)
+
+    detected_mode = mode_detection["detected_mode"]
+    mode_conf = mode_detection["confidence"]
 
     ttype, tconf = clf.predict_one(feats)
     is_anom, aconf, _ = anom.score_one({**feats,
@@ -25,13 +30,15 @@ def analyze_pcap(pcap_path, clf, anom, pfs_hint=None, mode_hint=None):
     inferred = {
         "traffic_type": ttype, "traffic_conf": tconf,
         "pfs": pfs_hint, "pfs_conf": 0.7 if pfs_hint else None,
-        "mode": mode_hint, "mode_conf": 0.6 if mode_hint else None,
+        "mode": detected_mode, "mode_conf": mode_conf,
         "anomaly": is_anom, "anomaly_conf": aconf,
     }
     result = assess(observed, inferred)
     result["session"] = pcap_path
     result["observed"] = observed
     result["inferred"] = inferred
+    result["mode_detection"] = mode_detection
+    result["ike_validation"] = ike_validation
     result["flow_features"] = feats
     result["exec_report"] = executive_md(result, pcap_path)
     result["tech_report"] = technical_md(result, pcap_path, observed, inferred)
