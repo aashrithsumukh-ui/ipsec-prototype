@@ -1,0 +1,313 @@
+{
+  "baseline_session": {
+    "session_id": "ikev2_tunnel_aes256-gcm_none_dh20_pfs-on_web.pcap",
+    "risk_score": 100,
+    "posture": "Strong",
+    "observed": {
+      "enc_algo": "aes256-gcm",
+      "integrity": "none",
+      "dh_group": 20,
+      "ike_version": 2
+    },
+    "inferred": {
+      "traffic_type": "web",
+      "traffic_conf": 0.9698296785354614,
+      "pfs": "on",
+      "pfs_conf": 0.7,
+      "mode": "tunnel",
+      "mode_conf": 0.65,
+      "anomaly": false,
+      "anomaly_conf": 0.0
+    },
+    "subscores": {
+      "crypto_strength": 100,
+      "key_management": 100,
+      "forward_secrecy": 100,
+      "metadata_exposure": 90
+    },
+    "findings_count": 0
+  },
+  "attack_session": {
+    "session_id": "ikev1_transport_3des-cbc_md5_dh2_pfs-off_bulk.pcap",
+    "risk_score": 20,
+    "posture": "Weak",
+    "observed": {
+      "enc_algo": "3des-cbc",
+      "integrity": "md5",
+      "dh_group": 2,
+      "ike_version": 1
+    },
+    "inferred": {
+      "traffic_type": "bulk",
+      "traffic_conf": 0.9872236251831055,
+      "pfs": "off",
+      "pfs_conf": 0.7,
+      "mode": "transport",
+      "mode_conf": 0.65,
+      "anomaly": false,
+      "anomaly_conf": 0.0
+    },
+    "subscores": {
+      "crypto_strength": 25,
+      "key_management": 40,
+      "forward_secrecy": 35,
+      "metadata_exposure": 60
+    },
+    "findings_count": 5
+  },
+  "detected_configuration_changes": {
+    "downgrade_detected": true,
+    "total_parameter_changes": 6,
+    "changes": [
+      {
+        "parameter": "enc_algo",
+        "derivation": "observed",
+        "baseline": "aes256-gcm",
+        "attack": "3des-cbc",
+        "downgraded": true,
+        "impact_level": "high",
+        "details": "Encryption algorithm shifted from aes256-gcm to 3des-cbc. (Deprecated/Weak cipher)"
+      },
+      {
+        "parameter": "integrity",
+        "derivation": "observed",
+        "baseline": "none",
+        "attack": "md5",
+        "downgraded": true,
+        "impact_level": "high",
+        "details": "Integrity check changed from none to md5. (md5 is vulnerable to collision attacks)"
+      },
+      {
+        "parameter": "dh_group",
+        "derivation": "observed",
+        "baseline": 20,
+        "attack": 2,
+        "downgraded": true,
+        "impact_level": "high",
+        "details": "DH Key exchange group changed from Group 20 to Group 2. (Group 2 is legacy/weak MODP)"
+      },
+      {
+        "parameter": "ike_version",
+        "derivation": "observed",
+        "baseline": 2,
+        "attack": 1,
+        "downgraded": true,
+        "impact_level": "medium",
+        "details": "IKE protocol version changed from IKEv2 to IKEv1."
+      },
+      {
+        "parameter": "pfs",
+        "derivation": "inferred",
+        "baseline": "on",
+        "attack": "off",
+        "downgraded": true,
+        "impact_level": "high",
+        "details": "Perfect Forward Secrecy changed from on to off. (Key compromise affects all past/future sessions)"
+      },
+      {
+        "parameter": "mode",
+        "derivation": "inferred",
+        "baseline": "tunnel",
+        "attack": "transport",
+        "downgraded": true,
+        "impact_level": "low",
+        "details": "IPsec encapsulation mode changed from tunnel to transport. (Inner IP header exposed)"
+      }
+    ]
+  },
+  "security_score": {
+    "before": 100,
+    "after": 20,
+    "difference": -80,
+    "score_dropped": true,
+    "posture_transition": "Strong -> Weak",
+    "subscores": {
+      "crypto_strength": {
+        "before": 100,
+        "after": 25,
+        "difference": -75
+      },
+      "key_management": {
+        "before": 100,
+        "after": 40,
+        "difference": -60
+      },
+      "forward_secrecy": {
+        "before": 100,
+        "after": 35,
+        "difference": -65
+      },
+      "metadata_exposure": {
+        "before": 90,
+        "after": 60,
+        "difference": -30
+      }
+    }
+  },
+  "detected_security_impact": {
+    "severity": "critical",
+    "score_reduction": 80,
+    "impact_summary": "Security posture degraded by 80 points (Strong -> Weak). Identified 6 configuration delta(s) exposing 5 primary vulnerability vector(s).",
+    "vulnerabilities_exposed": [
+      "Sweet32 Birthday Attack on 64-bit block ciphers (CVE-2016-2183)",
+      "Cryptographic collision attacks on MD5 (RFC 6151)",
+      "Discrete Logarithm / Logjam Precomputation Attacks on small prime MODP groups (RFC 8247)",
+      "Loss of Forward Secrecy: Long-term key compromise allows retroactive plaintext recovery",
+      "Endpoint address and traffic flow pattern leakage (RFC 4301)"
+    ],
+    "new_findings": [
+      {
+        "id": "DOWNGRADE-DETECTED",
+        "title": "IPsec Cryptographic Downgrade Detected",
+        "detail": "Active on-path or configuration downgrade detected. Security parameters downgraded: enc_algo (aes256-gcm -> 3des-cbc), integrity (none -> md5), dh_group (20 -> 2), ike_version (2 -> 1), pfs (on -> off), mode (tunnel -> transport). Overall risk score reduced by 80 points.",
+        "derivation": "observed",
+        "severity": "critical",
+        "confidence": null,
+        "nist_ref": "NIST SP 800-77 Sec.3; RFC 8247",
+        "recommendation": "Enforce strict proposal policies on both peers; strip weak/legacy ciphers (3DES, DES, MD5, DH-2/5) from responder configurations.",
+        "likelihood": "high",
+        "impact": "high",
+        "confidence_pct": null
+      },
+      {
+        "id": "ENC-3DES",
+        "title": "Deprecated cipher (3DES)",
+        "detail": "IKE SA negotiated 3des-cbc. 3DES is deprecated (64-bit block, Sweet32).",
+        "derivation": "observed",
+        "severity": "high",
+        "confidence": null,
+        "nist_ref": "NIST SP 800-77 Sec.3; RFC 8221",
+        "recommendation": "Move to AES-GCM (AES-256-GCM preferred).",
+        "likelihood": "medium",
+        "impact": "high",
+        "confidence_pct": null
+      },
+      {
+        "id": "INT-MD5",
+        "title": "Weak integrity (md5)",
+        "detail": "md5 is broken/deprecated for integrity protection.",
+        "derivation": "observed",
+        "severity": "high",
+        "confidence": null,
+        "nist_ref": "RFC 8247",
+        "recommendation": "Use SHA-256 or SHA-384 (or an AEAD cipher).",
+        "likelihood": "medium",
+        "impact": "high",
+        "confidence_pct": null
+      },
+      {
+        "id": "DH-2",
+        "title": "Legacy DH group 2",
+        "detail": "MODP group 2 is below current strength guidance.",
+        "derivation": "observed",
+        "severity": "high",
+        "confidence": null,
+        "nist_ref": "RFC 8247; NIST SP 800-77",
+        "recommendation": "Use group 19/20/21 (ECP) or 14+ (MODP) at minimum.",
+        "likelihood": "medium",
+        "impact": "high",
+        "confidence_pct": null
+      },
+      {
+        "id": "PFS-OFF",
+        "title": "Perfect Forward Secrecy disabled",
+        "detail": "No fresh DH on Child SA rekey \u2014 one key compromise exposes more traffic.",
+        "derivation": "inferred",
+        "severity": "high",
+        "confidence": 0.7,
+        "nist_ref": "NIST SP 800-77 Sec.4",
+        "recommendation": "Enable PFS (add a DH group to the ESP proposal).",
+        "likelihood": "medium",
+        "impact": "high",
+        "confidence_pct": 70
+      },
+      {
+        "id": "MODE-TRANSPORT",
+        "title": "Transport mode detected",
+        "detail": "Inner IP header is not encapsulated \u2014 endpoint addresses are exposed.",
+        "derivation": "inferred",
+        "severity": "low",
+        "confidence": 0.65,
+        "nist_ref": "RFC 4301 Sec.3.2",
+        "recommendation": "Use tunnel mode where addressing privacy matters.",
+        "likelihood": "low",
+        "impact": "medium",
+        "confidence_pct": 65
+      }
+    ],
+    "pfs_verification_status": "disabled"
+  },
+  "anomaly_detection": {
+    "baseline_anomaly": false,
+    "attack_anomaly": false,
+    "anomaly_detected": false,
+    "anomaly_flagged_by_attack": false,
+    "anomaly_confidence": 0.0,
+    "timing_or_flow_deviation": false,
+    "details": "Traffic metadata matches baseline behavior."
+  },
+  "evidence": [
+    {
+      "type": "observed_handshake_parameter",
+      "parameter": "enc_algo",
+      "derivation": "observed",
+      "finding": "enc_algo negotiated 3des-cbc (previously aes256-gcm)",
+      "nist_reference": "NIST SP 800-77 Sec.3",
+      "certainty": "confirmed_in_cleartext_ike_sa_init"
+    },
+    {
+      "type": "observed_handshake_parameter",
+      "parameter": "integrity",
+      "derivation": "observed",
+      "finding": "integrity negotiated md5 (previously none)",
+      "nist_reference": "NIST SP 800-77 Sec.3",
+      "certainty": "confirmed_in_cleartext_ike_sa_init"
+    },
+    {
+      "type": "observed_handshake_parameter",
+      "parameter": "dh_group",
+      "derivation": "observed",
+      "finding": "dh_group negotiated 2 (previously 20)",
+      "nist_reference": "RFC 8247",
+      "certainty": "confirmed_in_cleartext_ike_sa_init"
+    },
+    {
+      "type": "observed_handshake_parameter",
+      "parameter": "ike_version",
+      "derivation": "observed",
+      "finding": "ike_version negotiated 1 (previously 2)",
+      "nist_reference": "RFC 8247",
+      "certainty": "confirmed_in_cleartext_ike_sa_init"
+    },
+    {
+      "type": "inferred_parameter_behavior",
+      "parameter": "pfs",
+      "derivation": "inferred",
+      "finding": "pfs status transitioned to off",
+      "nist_reference": "NIST SP 800-77 Sec.4",
+      "certainty": "inferred_from_metadata"
+    },
+    {
+      "type": "inferred_parameter_behavior",
+      "parameter": "mode",
+      "derivation": "inferred",
+      "finding": "mode status transitioned to transport",
+      "nist_reference": "RFC 4301",
+      "certainty": "inferred_from_metadata"
+    }
+  ],
+  "confidence_level": {
+    "overall": "high",
+    "confidence_score": 0.95,
+    "observed_facts_count": 4,
+    "inferred_facts_count": 2,
+    "rationale": "High confidence: Core cryptographic algorithms (cipher, integrity, DH) were directly observed from plaintext IKE_SA_INIT negotiation."
+  },
+  "limitations": [
+    "PFS status is inferred from Child SA rekey heuristics or runtime hints unless live XFRM kernel state is inspected.",
+    "Tunnel vs Transport mode was inferred from ESP packet sizes and IP encapsulation heuristics without inner packet decryption.",
+    "Encrypted ESP payload content is opaque; analysis is strictly grounded in cleartext IKE negotiation and ESP statistical metadata."
+  ],
+  "validation_report": "# Security Assessment & Evidence Validation Report\n**IPsecGuard AI \u2014 Attack Impact & Verification Engine**\n\n## 1. Executive Summary\n- **Baseline Session:** `ikev2_tunnel_aes256-gcm_none_dh20_pfs-on_web.pcap` (Risk Score: **100/100**, Posture: **Strong**)\n- **Attack / Negotiated Session:** `ikev1_transport_3des-cbc_md5_dh2_pfs-off_bulk.pcap` (Risk Score: **20/100**, Posture: **Weak**)\n- **Score Transition:** `100` \u2192 `20` (Delta: **-80 points**, Posture: **Strong -> Weak**)\n- **Impact Severity:** **CRITICAL**\n- **Summary:** Security posture degraded by 80 points (Strong -> Weak). Identified 6 configuration delta(s) exposing 5 primary vulnerability vector(s).\n\n> [!CRITICAL] **Cryptographic Downgrade Detected**\n> An active proposal downgrade was identified across 6 security parameter(s). Strong proposals were suppressed during negotiation.\n\n## 2. Before-and-After Security Parameter Comparison\n\n| Parameter | Baseline | After Attack / Negotiated | Derivation | Change Status | Impact Level |\n| :--- | :--- | :--- | :--- | :--- | :--- |\n| `enc_algo` | `aes256-gcm` | `3des-cbc` | observed | **DOWNGRADED** | HIGH |\n| `integrity` | `none` | `md5` | observed | **DOWNGRADED** | HIGH |\n| `dh_group` | `20` | `2` | observed | **DOWNGRADED** | HIGH |\n| `ike_version` | `2` | `1` | observed | **DOWNGRADED** | MEDIUM |\n| `pfs` | `on` | `off` | inferred | **DOWNGRADED** | HIGH |\n| `mode` | `tunnel` | `transport` | inferred | **DOWNGRADED** | LOW |\n\n### Security Subscore Breakdown\n\n| Subscore Category | Baseline | After Attack | Difference |\n| :--- | :--- | :--- | :--- |\n| Crypto Strength | 100/100 | 25/100 | -75 |\n| Key Management | 100/100 | 40/100 | -60 |\n| Forward Secrecy | 100/100 | 35/100 | -65 |\n| Metadata Exposure | 90/100 | 60/100 | -30 |\n\n## 3. Forward Secrecy (PFS) Verification Status\n\n- **PFS State:** **DISABLED / MISSING** (`PFS-OFF`)\n- **Cryptographic Risk:** No fresh Diffie-Hellman exchange is conducted during Child SA rekeys. Compromise of the long-term IKE secret compromises all past and future encrypted traffic.\n- **Recommendation:** Enable PFS in IPsec proposals (`pfs=yes` / add DH group to ESP proposal).\n\n## 4. Anomaly Detection & Flow Deviations\n- **Baseline Anomaly:** `False`\n- **Attack Anomaly:** `False` (Confidence: **0.0%**)\n- **Flow Analysis:** Traffic metadata matches baseline behavior.\n\n## 5. Detected Security Impact & Vulnerabilities Exposed\n- \u26a0\ufe0f **Sweet32 Birthday Attack on 64-bit block ciphers (CVE-2016-2183)**\n- \u26a0\ufe0f **Cryptographic collision attacks on MD5 (RFC 6151)**\n- \u26a0\ufe0f **Discrete Logarithm / Logjam Precomputation Attacks on small prime MODP groups (RFC 8247)**\n- \u26a0\ufe0f **Loss of Forward Secrecy: Long-term key compromise allows retroactive plaintext recovery**\n- \u26a0\ufe0f **Endpoint address and traffic flow pattern leakage (RFC 4301)**\n\n## 6. Grounded Evidence Ledger (NIST SP 800-77 & RFCs)\n\n- **[OBSERVED]** enc_algo negotiated 3des-cbc (previously aes256-gcm) *(Ref: NIST SP 800-77 Sec.3)*\n- **[OBSERVED]** integrity negotiated md5 (previously none) *(Ref: NIST SP 800-77 Sec.3)*\n- **[OBSERVED]** dh_group negotiated 2 (previously 20) *(Ref: RFC 8247)*\n- **[OBSERVED]** ike_version negotiated 1 (previously 2) *(Ref: RFC 8247)*\n- **[INFERRED]** pfs status transitioned to off *(Ref: NIST SP 800-77 Sec.4)*\n- **[INFERRED]** mode status transitioned to transport *(Ref: RFC 4301)*\n\n## 7. Confidence Assessment & Operational Limitations\n- **Overall Confidence:** **HIGH** (95%)\n- **Observed Facts:** 4 certain (read from plaintext IKE_SA_INIT)\n- **Inferred Facts:** 2 estimated (ML/heuristics from encrypted ESP traffic)\n- **Rationale:** High confidence: Core cryptographic algorithms (cipher, integrity, DH) were directly observed from plaintext IKE_SA_INIT negotiation.\n\n### Limitations:\n- PFS status is inferred from Child SA rekey heuristics or runtime hints unless live XFRM kernel state is inspected.\n- Tunnel vs Transport mode was inferred from ESP packet sizes and IP encapsulation heuristics without inner packet decryption.\n- Encrypted ESP payload content is opaque; analysis is strictly grounded in cleartext IKE negotiation and ESP statistical metadata.\n\n## 8. Prioritized Remediation Roadmap\n1. **Enforce Proposal Whitelist:** Remove 3DES, DES, MD5, and MODP Groups 2/5 from both Moon and Sun gateway proposals.\n2. **Mandate AES-256-GCM / ECP DH:** Require AES-256-GCM (IKE & ESP) and DH group 19/20/21 (ECP) or group 14+ (MODP-2048).\n3. **Activate PFS on Child SAs:** Append DH groups to `esp` configuration proposals (e.g. `esp=aes256gcm128-ecp384!`).\n4. **Enable On-Path Tamper Auditing:** Monitor IKE exchange message checksums and inspect relay anomalies.",
+  "exec_report": "# Executive Summary \u2014 IPsecGuard AI\n**Session:** ikev1_transport_3des-cbc_md5_dh2_pfs-off_bulk.pcap\n**Risk score:** 20/100  \u00b7  **Posture:** Critical\n\n**Forward Secrecy (PFS) Status:** Perfect Forward Secrecy disabled (`PFS-OFF`)\n\n## Top risks\n- **Deprecated cipher (3DES)** (high, observed) \u2014 Move to AES-GCM (AES-256-GCM preferred).\n- **Weak integrity (md5)** (high, observed) \u2014 Use SHA-256 or SHA-384 (or an AEAD cipher).\n- **Legacy DH group 2** (high, observed) \u2014 Use group 19/20/21 (ECP) or 14+ (MODP) at minimum.\n- **Perfect Forward Secrecy disabled** (high, inferred, 70%) \u2014 Enable PFS (add a DH group to the ESP proposal)."
+}

@@ -79,9 +79,9 @@ def generate(n_configs=140, sessions_per_config=4, seed=7):
                                           p=[0.45, 0.2, 0.22, 0.13])
         for _ in range(sessions_per_config):
             ttype = rng.choice(TRAFFIC_TYPES)
-            # ~15% of sessions: real capture ambiguity — label stays, but the
+            # ~6% of sessions: real capture ambiguity — label stays, but the
             # flow genuinely resembles a neighbouring type (irreducible error).
-            shape_type = _CONFUSERS[ttype] if (rng.random() < 0.15) else ttype
+            shape_type = _CONFUSERS[ttype] if (rng.random() < 0.06) else ttype
             row = _one_flow(rng, shape_type)
             row.update(cfg)
             row["traffic_type"] = ttype
