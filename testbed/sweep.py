@@ -6,19 +6,16 @@ MOON, SUN = "ipg_moon", "ipg_sun"
 DH_NAME = {2:"modp1024",5:"modp1536",14:"modp2048",19:"ecp256",20:"ecp384",21:"ecp521"}
 
 TRAFFIC = {
-    "icmp":  "ping -c 250 -i 0.02 10.10.0.20",
-    "bulk":  "iperf3 -c 10.10.0.20 -t 10",
-    "voip":  "iperf3 -c 10.10.0.20 -u -l 200  -b 80k -t 10",
-    "video": "iperf3 -c 10.10.0.20 -u -l 1300 -b 4m  -t 10",
-    "email": "bash -c 'for i in 1 2 3; do iperf3 -c 10.10.0.20 -n 2M; sleep 1; done'",
-    "web":   "bash -c 'for i in $(seq 1 18); do iperf3 -c 10.10.0.20 -n 300K; sleep 0.3; done'",
-    "mixed": "bash -c 'iperf3 -c 10.10.0.20 -u -l 200 -b 80k -t 10 & iperf3 -c 10.10.0.20 -t 10; wait'",
+    "icmp":  "bash -c 'ping -c 60 -s 56 -i 0.03 10.10.0.20; ping -c 60 -s 128 -i 0.02 10.10.0.20; ping -c 60 -s 256 -i 0.04 10.10.0.20'",
+    "bulk":  "iperf3 -c 10.10.0.20 -P 2 -t 10",
+    "voip":  "bash -c 'iperf3 -c 10.10.0.20 -u -l 140 -b 64k -t 3; iperf3 -c 10.10.0.20 -u -l 220 -b 80k -t 4; iperf3 -c 10.10.0.20 -u -l 180 -b 64k -t 3'",
+    "video": "bash -c 'iperf3 -c 10.10.0.20 -u -l 1350 -b 3m -t 4; iperf3 -c 10.10.0.20 -u -l 700 -b 1.5m -t 3; iperf3 -c 10.10.0.20 -u -l 1100 -b 2.5m -t 3'",
+    "email": "bash -c 'iperf3 -c 10.10.0.20 -n 120K; sleep 0.5; iperf3 -c 10.10.0.20 -n 1.8M; sleep 0.8; iperf3 -c 10.10.0.20 -n 450K; sleep 0.4; iperf3 -c 10.10.0.20 -n 900K'",
+    "web":   "bash -c 'for sz in 150K 420K 80K 650K 220K 95K 510K 180K 310K; do iperf3 -c 10.10.0.20 -n $sz; sleep 0.25; done'",
+    "mixed": "bash -c 'iperf3 -c 10.10.0.20 -u -l 180 -b 64k -t 9 & for s in 180K 400K 120K; do iperf3 -c 10.10.0.20 -n $s; sleep 0.3; done; wait'",
 }
-NETEM = ["delay 40ms 25ms distribution normal loss 1.5%",
-         "delay 90ms 40ms loss 3%",
-         "delay 60ms 30ms loss 2% reorder 15% 50%",
-         "delay 120ms 50ms loss 4%",
-         "delay 30ms 20ms loss 1% duplicate 1%"]
+NETEM = ["", "delay 20ms 6ms distribution normal",
+         "delay 50ms 15ms loss 0.4%", "delay 12ms 4ms loss 0.2% reorder 5% 50%", "delay 30ms 8ms loss 0.3%"]
 
 SECURITY_PROFILES = [
     (2,"tunnel","aes256-gcm","none",20,"on"), (2,"tunnel","aes256-gcm","none",19,"on"),
