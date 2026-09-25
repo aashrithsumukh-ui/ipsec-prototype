@@ -1,31 +1,68 @@
-"""IPsecGuard AI — API backend with Live Simulation, Mode Detection, Validation & Benchmarking.
+"""IPsecGuard AI — API backend with Live Simulation, Mode Detection, Validation, Benchmarking & Robust Error Handling.
 
 Endpoints:
   GET  /api/analysis            -> static demo bundle
   GET  /api/validation          -> validation engine output (baseline vs attack)
   GET  /api/evaluation          -> benchmark evaluation results
   POST /api/simulate            -> simulate live traffic, mode detection & weakness assessment
-  POST /api/analyze  (pcap)     -> analyze uploaded capture live with automatic mode detection
+  POST /api/analyze  (pcap)     -> analyze uploaded capture live with automatic mode detection & error handling
   GET  /validation              -> validation view
   GET  /                        -> main unified interactive dashboard
 """
 import json, os, tempfile
+from typing import Optional, Any, Dict, List
 import numpy as np
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
-from pydantic import BaseModel
+from fastapi.exceptions import RequestValidationError
+from pydantic import BaseModel, field_validator
 import pandas as pd
 
 from ipsecguard.synth import generate, _one_flow
 from ipsecguard.classifier import TrafficClassifier
 from ipsecguard.anomaly import AnomalyDetector
-from ipsecguard.analyze import analyze_pcap
+from ipsecguard.analyze import analyze_pcap, safe_analyze_pcap
 from ipsecguard.validation import compare_sessions
 from ipsecguard.mode_detector import detect_ipsec_mode
 from ipsecguard.scoring import assess
 from ipsecguard.report import executive_md, technical_md, validation_report_md
+from ipsecguard.errors import (
+    ErrorCode,
+    IPsecGuardError,
+    PCAPValidationError,
+    AnalysisPipelineError,
+    InvalidInputParameterError,
+    format_error_response,
+)
 
 app = FastAPI(title="IPsecGuard AI")
+
+# Global Exception Handler for IPsecGuard Errors
+@app.exception_handler(IPsecGuardError)
+async def ipsecguard_exception_handler(request: Request, exc: IPsecGuardError):
+    status_code = 400 if isinstance(exc, PCAPValidationError) or isinstance(exc, InvalidInputParameterError) else 500
+    return JSONResponse(status_code=status_code, content=exc.to_dict())
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    err_list = []
+    for err in exc.errors():
+        err_list.append({
+            "loc": [str(x) for x in err.get("loc", [])],
+            "msg": str(err.get("msg", "")),
+            "type": str(err.get("type", ""))
+        })
+    msg = err_list[0]["msg"] if err_list else "Invalid request body"
+    return JSONResponse(
+        status_code=422,
+        content=format_error_response(
+            message=f"Request validation error: {msg}",
+            error_code=ErrorCode.INVALID_INPUT_PARAMETER,
+            stage="input_validation",
+            retryable=True,
+            details=err_list
+        )
+    )
 
 # Train once at startup: prefer real testbed data, fall back to synthetic
 _real_csv = "testbed/dataset.csv"
@@ -40,6 +77,11 @@ _clf = TrafficClassifier()
 _metrics = _clf.fit_eval(_df)
 _anom = AnomalyDetector().fit(_df)
 
+VALID_ENCR_ALGOS = {"aes256-gcm", "aes128-gcm", "aes256-cbc", "3des-cbc", "des-cbc"}
+VALID_INTEGRITIES = {"none", "sha256", "sha384", "sha1", "md5"}
+VALID_DH_GROUPS = {1, 2, 5, 14, 15, 16, 19, 20, 21, 31}
+VALID_MODES = {"tunnel", "transport"}
+
 class SimulateRequest(BaseModel):
     traffic_type: str = "web"
     enc_algo: str = "aes256-gcm"
@@ -48,6 +90,29 @@ class SimulateRequest(BaseModel):
     pfs: str = "on"
     mode: str = "tunnel"
     apply_downgrade: bool = False
+
+    @field_validator("enc_algo")
+    @classmethod
+    def validate_enc(cls, v: str) -> str:
+        clean = v.lower().strip()
+        if clean not in VALID_ENCR_ALGOS:
+            raise ValueError(f"Unsupported encryption algorithm '{v}'. Allowed: {sorted(list(VALID_ENCR_ALGOS))}")
+        return clean
+
+    @field_validator("dh_group")
+    @classmethod
+    def validate_dh(cls, v: int) -> int:
+        if v not in VALID_DH_GROUPS:
+            raise ValueError(f"Unsupported DH Group '{v}'. Allowed: {sorted(list(VALID_DH_GROUPS))}")
+        return v
+
+    @field_validator("mode")
+    @classmethod
+    def validate_mode(cls, v: str) -> str:
+        clean = v.lower().strip()
+        if clean not in VALID_MODES:
+            raise ValueError(f"Unsupported mode '{v}'. Allowed: {sorted(list(VALID_MODES))}")
+        return clean
 
 @app.get("/api/analysis")
 def analysis():
@@ -154,20 +219,78 @@ def simulate_traffic(req: SimulateRequest):
     })
 
 @app.post("/api/analyze")
-async def analyze(pcap: UploadFile = File(...),
-                  pfs_hint: str = "on", mode_hint: str = "tunnel"):
-    if not pcap.filename.endswith((".pcap", ".pcapng", ".cap")):
-        raise HTTPException(400, "Upload a .pcap/.pcapng capture")
+async def analyze(
+    pcap: UploadFile = File(...),
+    pfs_hint: Optional[str] = Form(None),
+    mode_hint: Optional[str] = Form(None)
+):
+    """Analyzes an uploaded PCAP with strict pre-flight validation and structured error reporting."""
+    if not pcap.filename:
+        return JSONResponse(
+            status_code=400,
+            content=format_error_response(
+                message="No file uploaded. Please upload a valid .pcap or .pcapng file.",
+                error_code=ErrorCode.PCAP_FILE_NOT_FOUND,
+                stage="pcap_validation",
+                retryable=True
+            )
+        )
+
+    ext = pcap.filename.lower()
+    if not ext.endswith((".pcap", ".pcapng", ".cap")):
+        return JSONResponse(
+            status_code=400,
+            content=format_error_response(
+                message=f"Unsupported file extension '{pcap.filename}'. Allowed formats: .pcap, .pcapng, .cap.",
+                error_code=ErrorCode.PCAP_UNSUPPORTED_FORMAT,
+                stage="pcap_validation",
+                retryable=False,
+                details={"filename": pcap.filename}
+            )
+        )
+
+    content = await pcap.read()
+    if len(content) == 0:
+        return JSONResponse(
+            status_code=400,
+            content=format_error_response(
+                message="Uploaded capture file is empty (0 bytes).",
+                error_code=ErrorCode.PCAP_EMPTY_FILE,
+                stage="pcap_validation",
+                retryable=False,
+                details={"filename": pcap.filename, "bytes_received": 0}
+            )
+        )
+
     tmp = tempfile.NamedTemporaryFile(suffix=".pcap", delete=False)
-    tmp.write(await pcap.read()); tmp.close()
     try:
-        r = analyze_pcap(tmp.name, _clf, _anom, pfs_hint=pfs_hint, mode_hint=mode_hint)
-        r["model_metrics"] = _metrics
-        return JSONResponse(r)
-    except Exception as e:
-        raise HTTPException(422, f"Could not analyze capture: {e}")
+        tmp.write(content)
+        tmp.flush()
+        tmp.close()
+
+        analysis_output = safe_analyze_pcap(
+            tmp.name,
+            _clf,
+            _anom,
+            pfs_hint=pfs_hint or "on",
+            mode_hint=mode_hint or "tunnel"
+        )
+
+        if analysis_output.get("status") == "error":
+            error_code = analysis_output.get("error_code")
+            status_code = 400 if "PCAP" in error_code or "VALIDATION" in error_code else 422
+            return JSONResponse(status_code=status_code, content=analysis_output)
+
+        res_data = analysis_output["data"]
+        res_data["model_metrics"] = _metrics
+        return JSONResponse(res_data)
+
     finally:
-        os.unlink(tmp.name)
+        if os.path.exists(tmp.name):
+            try:
+                os.unlink(tmp.name)
+            except Exception:
+                pass
 
 @app.get("/validation", response_class=HTMLResponse)
 def validation_ui():

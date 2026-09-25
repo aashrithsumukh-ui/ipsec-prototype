@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IPsecGuard AI — Attack Impact & Validation Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0E141F; --bg2: #0A0F17; --surf: #161F2E; --surf2: #1C2838;
+  --line: #26344A; --line2: #324563;
+  --ink: #EAF0F9; --mut: #8C9BB3; --dim: #5F6E86;
+  --observed: #2DD4BF; --observed-d: #0E4F49;
+  --inferred: #F5A623; --inferred-d: #5A3F0E;
+  --good: #34D399; --warn: #F5A623; --bad: #F87171; --crit: #EF4444;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: Inter, system-ui, sans-serif; font-size: 14px; line-height: 1.5;
+  background-image: radial-gradient(1200px 500px at 80% -10%, #16233a55, transparent);
+}
+.wrap { max-width: 1120px; margin: 0 auto; padding: 24px 20px 80px; }
+h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; margin: 0; font-weight: 600; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* header */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.logo { width: 34px; height: 34px; flex: none; }
+.brand .name { font-family: 'Space Grotesk'; font-weight: 700; font-size: 20px; letter-spacing: -.02em; }
+.brand .sub { color: var(--dim); font-size: 12px; margin-top: -2px; }
+.nav-links { display: flex; gap: 8px; }
+.nav-link { font-family: inherit; font-size: 13px; font-weight: 500; color: var(--mut); background: var(--bg2); border: 1px solid var(--line); padding: 7px 14px; border-radius: 8px; text-decoration: none; transition: .18s; }
+.nav-link:hover, .nav-link.active { color: var(--ink); background: var(--surf2); border-color: var(--line2); }
+
+/* hero cards */
+.hero { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 16px; margin-bottom: 24px; }
+@media(max-width: 860px) { .hero { grid-template-columns: 1fr; } }
+.card { background: linear-gradient(180deg, var(--surf), var(--surf2)); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+.card-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--mut); margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+.score-badge { font-family: 'Space Grotesk'; font-weight: 700; font-size: 42px; line-height: 1; margin: 10px 0 6px; }
+.posture { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; display: inline-block; }
+.posture.strong { background: #0f2b28; color: var(--good); border: 1px solid var(--good); }
+.posture.critical { background: #3a1515; color: var(--bad); border: 1px solid var(--bad); }
+
+.delta-box { background: #3a151522; border: 1px solid #7a3030; border-radius: 12px; padding: 16px; text-align: center; }
+.delta-num { font-family: 'Space Grotesk'; font-size: 44px; font-weight: 700; color: var(--bad); line-height: 1; }
+.delta-label { font-size: 13px; color: var(--mut); margin-top: 4px; }
+
+/* section headers */
+.sec { margin-top: 28px; }
+.sec-h { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+.sec-h h2 { font-size: 17px; }
+.sec-h .hint { color: var(--dim); font-size: 12px; }
+
+/* tables */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--bg2); }
+table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+th { background: var(--surf); color: var(--mut); font-weight: 600; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+td { padding: 12px 16px; border-bottom: 1px solid #1a2638; vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+.badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 5px; text-transform: uppercase; }
+.badge.down { background: #3a1515; color: var(--bad); border: 1px solid #7a3030; }
+.badge.obs { background: var(--observed-d); color: var(--observed); }
+.badge.inf { background: var(--inferred-d); color: var(--inferred); }
+
+/* grid 2 */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
+@media(max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
+
+.vuln-item { background: var(--bg2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; font-size: 13px; display: flex; gap: 10px; align-items: flex-start; }
+.vuln-item svg { flex: none; margin-top: 2px; }
+
+.evidence-card { border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; background: var(--surf); margin-bottom: 8px; }
+.evidence-h { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+.evidence-txt { font-weight: 500; font-size: 13px; }
+
+/* Findings list */
+.find-item { background: var(--surf); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; }
+.find-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.find-t { font-weight: 600; font-size: 14px; font-family: 'Space Grotesk'; }
+
+/* Report & JSON box */
+.report-view { background: var(--bg2); border: 1px solid var(--line); border-radius: 12px; padding: 20px 24px; font-size: 13px; max-height: 480px; overflow: auto; line-height: 1.6; }
+.report-view h1 { font-size: 18px; margin: 0 0 10px; color: var(--ink); }
+.report-view h2 { font-size: 15px; margin: 18px 0 8px; color: var(--observed); border-bottom: 1px solid #1f2b3e; padding-bottom: 4px; }
+.report-view h3 { font-size: 13.5px; margin: 12px 0 6px; color: var(--mut); }
+.report-view table { margin: 12px 0; }
+.report-view th, .report-view td { padding: 8px 12px; }
+.report-view blockquote { margin: 10px 0; padding: 10px 14px; background: #3a151533; border-left: 4px solid var(--bad); border-radius: 4px; color: var(--ink); }
+.json-box { background: var(--bg2); border: 1px solid var(--line); border-radius: 12px; padding: 16px; font-family: 'JetBrains Mono', monospace; font-size: 12px; max-height: 380px; overflow: auto; color: #a5b4fc; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 32 32" fill="none">
+        <path d="M16 2 4 7v8c0 7 5 12 12 15 7-3 12-8 12-15V7L16 2Z" stroke="#2DD4BF" stroke-width="1.6" fill="#0f2b2833"/>
+        <path d="M11 15v-3a5 5 0 0 1 10 0v3" stroke="#F5A623" stroke-width="1.6"/>
+        <rect x="10" y="15" width="12" height="9" rx="2" stroke="#EAF0F9" stroke-width="1.6"/>
+      </svg>
+      <div>
+        <div class="name">IPsecGuard AI</div>
+        <div class="sub">Evidence-Based Security &amp; Validation Engine</div>
+      </div>
+    </div>
+    <div class="nav-links">
+      <a href="/" class="nav-link">Main Dashboard</a>
+      <a href="/validation" class="nav-link active">Attack Validation</a>
+      <a href="/docs" class="nav-link" target="_blank">API Docs</a>
+      <a href="/api/validation" class="nav-link" target="_blank">Raw JSON</a>
+    </div>
+  </div>
+
+  <!-- Hero Comparison -->
+  <div class="hero" id="hero-sec">
+    <div class="card">
+      <div class="card-label">Baseline Session <span class="badge obs">Verified</span></div>
+      <div class="score-badge" style="color:var(--good)" id="base-score">100</div>
+      <div><span class="posture strong" id="base-posture">Strong</span></div>
+      <div class="mono" style="font-size:11.5px;color:var(--mut);margin-top:10px;" id="base-sess">ikev2_tunnel_aes256-gcm...</div>
+      <div style="font-size:12px;color:var(--dim);margin-top:8px;" id="base-suite">AES-256-GCM · None · DH-20 · PFS On</div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Attack Session <span class="badge down">Downgraded</span></div>
+      <div class="score-badge" style="color:var(--bad)" id="atk-score">10</div>
+      <div><span class="posture critical" id="atk-posture">Critical</span></div>
+      <div class="mono" style="font-size:11.5px;color:var(--mut);margin-top:10px;" id="atk-sess">ikev1_transport_3des...</div>
+      <div style="font-size:12px;color:var(--dim);margin-top:8px;" id="atk-suite">3DES-CBC · MD5 · DH-2 · PFS Off</div>
+    </div>
+
+    <div class="card" style="display:flex;flex-direction:column;justify-content:center;">
+      <div class="delta-box">
+        <div class="delta-num" id="delta-score">-90 pts</div>
+        <div class="delta-label">Security Posture Drop: <strong id="delta-transition" style="color:var(--ink)">Strong → Critical</strong></div>
+        <div style="margin-top:10px;font-size:12px;color:var(--bad);font-weight:600;" id="delta-sev">SEVERITY: CRITICAL IMPACT</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Configuration Delta Table -->
+  <div class="sec">
+    <div class="sec-h">
+      <h2>Detected Configuration &amp; Cryptographic Changes</h2>
+      <span class="hint" id="delta-count">6 changes detected</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Derivation</th>
+            <th>Baseline</th>
+            <th>After Attack</th>
+            <th>Impact</th>
+            <th>Vulnerability &amp; Analysis Detail</th>
+          </tr>
+        </thead>
+        <tbody id="changes-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Integrated Findings (DOWNGRADE-DETECTED / PFS) -->
+  <div class="sec">
+    <div class="sec-h">
+      <h2>Evidence-Based Security Findings</h2>
+      <span class="hint" id="findings-count"></span>
+    </div>
+    <div id="findings-container"></div>
+  </div>
+
+  <!-- Impact & Vulnerabilities & Anomaly -->
+  <div class="grid2">
+    <div>
+      <div class="sec-h">
+        <h2>Exposed Vulnerability Vectors</h2>
+      </div>
+      <div id="vuln-list"></div>
+
+      <div class="sec-h" style="margin-top:20px;">
+        <h2>Anomaly Detection Result</h2>
+      </div>
+      <div class="card" style="padding:14px 18px;" id="anom-card"></div>
+    </div>
+
+    <div>
+      <div class="sec-h">
+        <h2>Validation Evidence (NIST / RFC Grounded)</h2>
+      </div>
+      <div id="evidence-list"></div>
+
+      <div class="sec-h" style="margin-top:20px;">
+        <h2>Confidence &amp; Limitations</h2>
+      </div>
+      <div class="card" style="padding:14px 18px;" id="conf-card"></div>
+    </div>
+  </div>
+
+  <!-- Full Markdown Report View -->
+  <div class="sec">
+    <div class="sec-h">
+      <h2>Integrated Security Assessment &amp; Validation Report (Markdown)</h2>
+      <span class="hint">auto-generated from validation engine</span>
+    </div>
+    <div class="report-view" id="report-view"></div>
+  </div>
+
+  <!-- Raw JSON -->
+  <div class="sec">
+    <div class="sec-h">
+      <h2>Structured Validation JSON Output</h2>
+      <a href="/api/validation" target="_blank" style="color:var(--observed);font-size:12px;text-decoration:none;">Open in new tab ↗</a>
+    </div>
+    <div class="json-box" id="json-raw"></div>
+  </div>
+</div>
+
+<script>
+function renderMarkdown(md) {
+  if (!md) return '';
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  let html = '';
+  let inTable = false;
+  let inList = false;
+
+  const lines = md.split('\n');
+  for (let l of lines) {
+    let line = l.trim();
+    if (line.startsWith('# ')) {
+      html += `<h1>${line.slice(2)}</h1>`;
+    } else if (line.startsWith('## ')) {
+      html += `<h2>${line.slice(3)}</h2>`;
+    } else if (line.startsWith('### ')) {
+      html += `<h3>${line.slice(4)}</h3>`;
+    } else if (line.startsWith('> [!CRITICAL]')) {
+      html += `<blockquote><strong>CRITICAL:</strong> `;
+    } else if (line.startsWith('> [!NOTE]')) {
+      html += `<blockquote><strong>NOTE:</strong> `;
+    } else if (line.startsWith('> ')) {
+      html += `${line.slice(2)}</blockquote>`;
+    } else if (line.startsWith('|') && line.endsWith('|')) {
+      if (!inTable) {
+        html += '<table><tbody>';
+        inTable = true;
+      }
+      if (line.includes(':---')) continue;
+      const cells = line.split('|').slice(1, -1);
+      html += '<tr>' + cells.map(c => `<td>${c.trim()}</td>`).join('') + '</tr>';
+    } else if (line.startsWith('- ')) {
+      if (inTable) { html += '</tbody></table>'; inTable = false; }
+      if (!inList) { html += '<ul>'; inList = true; }
+      html += `<li>${line.slice(2)}</li>`;
+    } else if (line === '') {
+      if (inTable) { html += '</tbody></table>'; inTable = false; }
+      if (inList) { html += '</ul>'; inList = false; }
+    } else {
+      if (inTable) { html += '</tbody></table>'; inTable = false; }
+      if (inList) { html += '</ul>'; inList = false; }
+      html += `<p>${line}</p>`;
+    }
+  }
+  if (inTable) html += '</tbody></table>';
+  if (inList) html += '</ul>';
+
+  return html
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`(.+?)`/g, '<code>$1</code>');
+}
+
+async function loadData() {
+  try {
+    const res = await fetch('/api/validation');
+    const d = await res.json();
+    renderValidation(d);
+  } catch (err) {
+    console.error("Failed loading validation data", err);
+  }
+}
+
+function renderValidation(d) {
+  // 1. Hero
+  const b = d.baseline_session;
+  const a = d.attack_session;
+  const s = d.security_score;
+
+  document.getElementById('base-score').textContent = b.risk_score;
+  document.getElementById('base-posture').textContent = b.posture;
+  document.getElementById('base-sess').textContent = b.session_id;
+  document.getElementById('base-suite').textContent = `${b.observed.enc_algo} · ${b.observed.integrity} · DH-${b.observed.dh_group} · PFS ${b.inferred.pfs}`;
+
+  document.getElementById('atk-score').textContent = a.risk_score;
+  document.getElementById('atk-posture').textContent = a.posture;
+  document.getElementById('atk-sess').textContent = a.session_id;
+  document.getElementById('atk-suite').textContent = `${a.observed.enc_algo} · ${a.observed.integrity} · DH-${a.observed.dh_group} · PFS ${a.inferred.pfs}`;
+
+  document.getElementById('delta-score').textContent = (s.difference > 0 ? '+' : '') + s.difference + ' pts';
+  document.getElementById('delta-transition').textContent = s.posture_transition;
+  document.getElementById('delta-sev').textContent = 'SEVERITY: ' + d.detected_security_impact.severity.toUpperCase() + ' IMPACT';
+
+  // 2. Changes Table
+  const tbody = document.getElementById('changes-tbody');
+  const changes = d.detected_configuration_changes.changes;
+  document.getElementById('delta-count').textContent = changes.length + ' parameter change(s)';
+
+  tbody.innerHTML = changes.map(c => `
+    <tr>
+      <td class="mono"><strong>${c.parameter}</strong></td>
+      <td><span class="badge ${c.derivation === 'observed' ? 'obs' : 'inf'}">${c.derivation}</span></td>
+      <td class="mono" style="color:var(--good)">${c.baseline}</td>
+      <td class="mono" style="color:var(--bad)">${c.attack}</td>
+      <td><span class="badge ${c.downgraded ? 'down' : ''}">${c.impact_level}</span></td>
+      <td style="color:var(--mut)">${c.details}</td>
+    </tr>
+  `).join('');
+
+  // 3. Findings
+  const findings = d.detected_security_impact.new_findings || [];
+  document.getElementById('findings-count').textContent = findings.length + ' item(s)';
+  document.getElementById('findings-container').innerHTML = findings.map(f => `
+    <div class="find-item">
+      <div class="find-h">
+        <span class="find-t" style="color:${f.severity==='critical'?'var(--bad)':f.severity==='high'?'var(--warn)':'var(--good)'}">[${f.id}] ${f.title}</span>
+        <span class="badge ${f.derivation==='observed'?'obs':'inf'}">${f.derivation}</span>
+      </div>
+      <div style="font-size:12.5px;color:var(--mut);margin-bottom:6px;">${f.detail}</div>
+      <div style="font-size:12px;color:var(--observed);">→ Recommendation: ${f.recommendation}</div>
+    </div>
+  `).join('');
+
+  // 4. Vulnerabilities
+  const vulns = d.detected_security_impact.vulnerabilities_exposed;
+  document.getElementById('vuln-list').innerHTML = vulns.map(v => `
+    <div class="vuln-item">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F87171" stroke-width="2"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+      <div>${v}</div>
+    </div>
+  `).join('');
+
+  // 5. Anomaly
+  const an = d.anomaly_detection;
+  document.getElementById('anom-card').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <span style="font-weight:600;">Isolation Forest Status:</span>
+      <span class="badge ${an.attack_anomaly ? 'down' : 'obs'}">${an.attack_anomaly ? 'ANOMALY DETECTED' : 'NORMAL'}</span>
+    </div>
+    <div style="font-size:12.5px;color:var(--mut);">Confidence: <strong>${(an.anomaly_confidence * 100).toFixed(1)}%</strong></div>
+    <div style="font-size:12.5px;color:var(--dim);margin-top:6px;">${an.details}</div>
+  `;
+
+  // 6. Evidence
+  const ev = d.evidence;
+  document.getElementById('evidence-list').innerHTML = ev.map(e => `
+    <div class="evidence-card">
+      <div class="evidence-h">
+        <span class="badge ${e.derivation === 'observed' ? 'obs' : 'inf'}">${e.derivation}</span>
+        <span style="color:var(--dim)">${e.nist_reference || 'NIST SP 800-77'}</span>
+      </div>
+      <div class="evidence-txt">${e.finding}</div>
+    </div>
+  `).join('');
+
+  // 7. Confidence & Limitations
+  const conf = d.confidence_level;
+  const lim = d.limitations;
+  document.getElementById('conf-card').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <span style="font-weight:600;">Overall Confidence:</span>
+      <span class="badge obs">${conf.overall.toUpperCase()} (${(conf.confidence_score * 100).toFixed(0)}%)</span>
+    </div>
+    <div style="font-size:12.5px;color:var(--mut);margin-bottom:12px;">${conf.rationale}</div>
+    <div style="font-weight:600;font-size:12px;color:var(--dim);text-transform:uppercase;margin-bottom:6px;">Limitations:</div>
+    <ul style="margin:0;padding-left:18px;font-size:12px;color:var(--mut);">
+      ${lim.map(l => `<li>${l}</li>`).join('')}
+    </ul>
+  `;
+
+  // 8. Markdown report rendering
+  document.getElementById('report-view').innerHTML = renderMarkdown(d.validation_report);
+
+  // 9. Raw JSON
+  document.getElementById('json-raw').textContent = JSON.stringify(d, null, 2);
+}
+
+loadData();
+</script>
+</body>
+</html>
