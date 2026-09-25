@@ -14,8 +14,11 @@ TRAFFIC = {
     "web":   "bash -c 'for i in $(seq 1 18); do iperf3 -c 10.10.0.20 -n 300K; sleep 0.3; done'",
     "mixed": "bash -c 'iperf3 -c 10.10.0.20 -u -l 200 -b 80k -t 10 & iperf3 -c 10.10.0.20 -t 10; wait'",
 }
-NETEM = ["", "delay 15ms 4ms distribution normal",
-         "delay 45ms 12ms loss 0.4%", "delay 8ms 2ms loss 0.1%", "delay 25ms 6ms"]
+NETEM = ["delay 40ms 25ms distribution normal loss 1.5%",
+         "delay 90ms 40ms loss 3%",
+         "delay 60ms 30ms loss 2% reorder 15% 50%",
+         "delay 120ms 50ms loss 4%",
+         "delay 30ms 20ms loss 1% duplicate 1%"]
 
 SECURITY_PROFILES = [
     (2,"tunnel","aes256-gcm","none",20,"on"), (2,"tunnel","aes256-gcm","none",19,"on"),

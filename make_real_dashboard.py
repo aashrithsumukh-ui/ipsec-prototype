@@ -12,6 +12,27 @@ CSV = sys.argv[1] if len(sys.argv) > 1 else "testbed/dataset.csv"
 df = pd.read_csv(CSV)
 print(f"[data] {len(df)} real sessions, {df.config_id.nunique()} configs")
 clf = TrafficClassifier(); metrics = clf.fit_eval(df)
+# Override the single-split accuracy with rigorous grouped 4-fold CV (the honest number)
+import numpy as np
+from sklearn.model_selection import GroupKFold
+from sklearn.metrics import accuracy_score, f1_score
+from sklearn.preprocessing import LabelEncoder
+from xgboost import XGBClassifier
+from ipsecguard.schema import FLOW_FEATURES as _FF
+_X = df[_FF].values
+_le = LabelEncoder(); _y = _le.fit_transform(df["traffic_type"].values)
+_g = df["config_id"].values
+_accs, _f1s = [], []
+for _tr, _te in GroupKFold(n_splits=min(4, len(np.unique(_g)))).split(_X, _y, _g):
+    _m = XGBClassifier(n_estimators=400, max_depth=4, learning_rate=0.08,
+                       subsample=0.9, colsample_bytree=0.8, reg_lambda=2.0,
+                       eval_metric="mlogloss", tree_method="hist", random_state=7)
+    _m.fit(_X[_tr], _y[_tr]); _p = _m.predict(_X[_te])
+    _accs.append(accuracy_score(_y[_te], _p)); _f1s.append(f1_score(_y[_te], _p, average="macro"))
+metrics["accuracy"] = float(np.mean(_accs))
+metrics["f1_macro"] = float(np.mean(_f1s))
+metrics["accuracy_std"] = float(np.std(_accs))
+metrics["split"] = f"{len(_accs)}-fold grouped CV (mean over folds)"
 anom = AnomalyDetector().fit(df)
 print(f"[clf ] accuracy={metrics['accuracy']:.3f} f1={metrics['f1_macro']:.3f}")
 

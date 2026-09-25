@@ -1,0 +1,48 @@
+=== IPsecGuard re-run started Fri Sep 25 07:15:01 UTC 2026 ===
+[0] starting docker + containers
+ Container ipg_eve Running 
+ Container ipg_moon Running 
+[1] clearing old data
+[2] sweep --repeat 3 (~60 min, heavy netem)  Fri Sep 25 07:15:12 UTC 2026
+[165/168]  -> r2_ikev1_transport_3des-cbc_md5_dh2_pfs-off_video.pcap
+[166/168]  -> r2_ikev1_transport_3des-cbc_md5_dh2_pfs-off_email.pcap
+[167/168]  -> r2_ikev1_transport_3des-cbc_md5_dh2_pfs-off_web.pcap
+[168/168]  -> r2_ikev1_transport_3des-cbc_md5_dh2_pfs-off_mixed.pcap
+[sweep] done -> ./captures/*.pcap
+[3] building dataset  Fri Sep 25 09:22:12 UTC 2026
+ok: r2_ikev2_tunnel_aes256-gcm_none_dh20_pfs-on_web.pcap -> web
+
+Wrote dataset.csv: 168 sessions, 7 traffic types
+[4] 4-fold grouped CV
+[eval] 168 sessions, 8 configs, 4-fold grouped CV
+
+  fold 1: acc=0.976  f1=0.976
+  fold 2: acc=0.976  f1=0.976
+  fold 3: acc=0.905  f1=0.902
+  fold 4: acc=1.000  f1=1.000
+
+[result] accuracy 0.964 +/- 0.036   f1_macro 0.964 +/- 0.037
+
+[per-class]
+              precision    recall  f1-score   support
+
+        bulk       1.00      1.00      1.00        24
+       email       1.00      1.00      1.00        24
+        icmp       0.95      0.88      0.91        24
+       mixed       0.85      0.92      0.88        24
+       video       1.00      1.00      1.00        24
+        voip       0.96      0.96      0.96        24
+         web       1.00      1.00      1.00        24
+
+    accuracy                           0.96       168
+   macro avg       0.97      0.96      0.96       168
+weighted avg       0.97      0.96      0.96       168
+
+[5] leave-one-config-out CV (strict)
+LOGO-CV: accuracy 0.958 +/- 0.050  range 0.857-1.000
+LOGO-CV: f1_macro 0.951 +/- 0.064
+[6] refreshing dashboard data
+[out ] outputs/analysis.json from REAL data
+  weak:   ikev1_transport_3des-cbc_md5_dh2_pfs-off_bulk.pcap -> risk 20
+  strong: ikev2_tunnel_aes256-gcm_none_dh20_pfs-on_web.pcap -> risk 100
+=== DONE Fri Sep 25 09:24:18 UTC 2026 ===
